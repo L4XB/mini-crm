@@ -1,30 +1,31 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { UserGroupIcon, 
-  CurrencyDollarIcon, 
-  ClipboardDocumentListIcon,
-  BriefcaseIcon,
-  ArrowTrendingUpIcon,
-  CalendarIcon,
-  ExclamationCircleIcon
-} from '@heroicons/react/24/outline';
-import { format } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { formatCurrency } from '@/lib/utils';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
+  ArrowTrendingUpIcon,
+  BriefcaseIcon,
+  CalendarIcon,
+  ClipboardDocumentListIcon,
+  CurrencyDollarIcon,
+  ExclamationCircleIcon,
+  UserGroupIcon
+} from '@heroicons/react/24/outline';
+import {
+  ArcElement,
   BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
-  Legend,
-  ArcElement,
 } from 'chart.js';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
+import React, { useEffect, useState } from 'react';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
-import { formatCurrency } from '@/lib/utils';
 
 // Temporary mocked DashboardLayout until we fix the imports
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
@@ -58,7 +59,7 @@ export default function Dashboard() {
     amount: number;
     expectedDate: string;
   }
-  
+
   interface DashboardStats {
     contacts: number;
     deals: number;
@@ -80,7 +81,7 @@ export default function Dashboard() {
     revenueTarget: 250000,
     upcomingDeals: []
   });
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,31 +89,31 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        
+
         // For now, let's use mocked data instead of API calls that would fail
         const contactsData = Array(15).fill(null).map((_, i) => ({ id: i, name: `Contact ${i}` }));
-        const dealsData = Array(8).fill(null).map((_, i) => ({ 
-          id: i, 
-          name: `Deal ${i}`, 
-          amount: Math.round(Math.random() * 10000), 
-          expectedDate: new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() 
+        const dealsData = Array(8).fill(null).map((_, i) => ({
+          id: i,
+          name: `Deal ${i}`,
+          amount: Math.round(Math.random() * 10000),
+          expectedDate: new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
         }));
-        const tasksData = Array(12).fill(null).map((_, i) => ({ 
-          id: i, 
-          title: `Task ${i}`, 
-          completed: Math.random() > 0.5 
+        const tasksData = Array(12).fill(null).map((_, i) => ({
+          id: i,
+          title: `Task ${i}`,
+          completed: Math.random() > 0.5
         }));
 
         // Calculate dashboard stats
         const pendingTasks = tasksData.filter((task) => !task.completed);
         const completedTasks = tasksData.filter((task) => task.completed);
         const totalRevenue = dealsData.reduce((sum, deal) => sum + (deal.amount || 0), 0);
-        
+
         // Get upcoming deals (next 30 days)
         const now = new Date();
         const in30Days = new Date();
         in30Days.setDate(now.getDate() + 30);
-        
+
         const upcomingDeals = dealsData
           .filter((deal) => {
             const expectedDate = new Date(deal.expectedDate);
@@ -131,7 +132,7 @@ export default function Dashboard() {
           revenueTarget: 250000,
           upcomingDeals: upcomingDeals as Deal[]
         });
-        
+
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError('Fehler beim Laden der Dashboard-Daten.');
@@ -223,18 +224,18 @@ export default function Dashboard() {
   }
 
   // Button component replacement to avoid type errors
-  const Button = ({ 
-    children, 
-    className = "", 
-    onClick = () => {}, 
+  const Button = ({
+    children,
+    className = "",
+    onClick = () => { },
     variant = "default"
-  }: { 
-    children: React.ReactNode; 
-    className?: string; 
-    onClick?: () => void; 
-    variant?: string 
+  }: {
+    children: React.ReactNode;
+    className?: string;
+    onClick?: () => void;
+    variant?: string
   }) => (
-    <button 
+    <button
       onClick={onClick}
       className={`${className} px-4 py-2 rounded-md ${variant === 'outline' ? 'border border-gray-300 bg-white hover:bg-gray-50' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
     >
@@ -316,7 +317,7 @@ export default function Dashboard() {
                     <dd>
                       <div className="text-lg font-medium text-gray-900">{stats.tasks}</div>
                       <p className="text-sm text-gray-500">
-                        <span className="text-green-500">{stats.completedTasks} erledigt</span> / 
+                        <span className="text-green-500">{stats.completedTasks} erledigt</span> /
                         <span className="text-amber-500 ml-1">{stats.pendingTasks} offen</span>
                       </p>
                     </dd>
@@ -367,8 +368,8 @@ export default function Dashboard() {
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Umsatzentwicklung</h3>
             <div className="h-80">
-              <Line 
-                data={revenueChartData} 
+              <Line
+                data={revenueChartData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
@@ -376,7 +377,7 @@ export default function Dashboard() {
                     y: {
                       beginAtZero: true,
                       ticks: {
-                        callback: function(value) {
+                        callback: function (value) {
                           return formatCurrency(value as number);
                         }
                       }
@@ -388,7 +389,7 @@ export default function Dashboard() {
                     },
                     tooltip: {
                       callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                           return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
                         }
                       }
@@ -403,8 +404,8 @@ export default function Dashboard() {
             <h3 className="text-lg font-medium text-gray-900 mb-4">Deal-Status-Verteilung</h3>
             <div className="h-80 flex justify-center items-center">
               <div style={{ width: '70%', height: '70%' }}>
-                <Doughnut 
-                  data={dealsStatusData} 
+                <Doughnut
+                  data={dealsStatusData}
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
@@ -424,8 +425,8 @@ export default function Dashboard() {
           <div className="lg:col-span-2 bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Aufgabenverteilung nach Typ</h3>
             <div className="h-64">
-              <Bar 
-                data={tasksByTypeData} 
+              <Bar
+                data={tasksByTypeData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
@@ -449,10 +450,10 @@ export default function Dashboard() {
               <h3 className="text-lg font-medium text-gray-900">Anstehende Deals</h3>
               <span className="text-sm text-gray-500">Nächste 30 Tage</span>
             </div>
-            
+
             {stats.upcomingDeals && stats.upcomingDeals.length > 0 ? (
               <div className="space-y-3">
-                {stats.upcomingDeals.map((deal: any) => (
+                {stats.upcomingDeals.map((deal: Deal) => (
                   <div key={deal.id} className="flex items-start p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
                     <div className="flex-shrink-0">
                       <BriefcaseIcon className="h-5 w-5 text-gray-400" />
@@ -473,10 +474,10 @@ export default function Dashboard() {
             ) : (
               <p className="text-gray-500 text-sm p-4 text-center">Keine anstehenden Deals in den nächsten 30 Tagen.</p>
             )}
-            
+
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full text-sm py-2"
               >
                 Alle Deals anzeigen

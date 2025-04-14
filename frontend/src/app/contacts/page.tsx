@@ -1,17 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
-import { 
-  PlusIcon, 
-  MagnifyingGlassIcon,
+import { Contact } from '@/types/contact';
+import {
   ArrowDownTrayIcon,
+  ChevronDownIcon,
+  EnvelopeIcon,
   FunnelIcon,
-  ChevronDownIcon
+  MagnifyingGlassIcon,
+  PencilIcon,
+  PhoneIcon,
+  PlusIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { ContactList } from '@/components/contacts/ContactList';
-import { ContactFilters } from '@/components/contacts/ContactFilters';
-import { Contact } from '@/types/contact';
+import { useState } from 'react';
 
 // Mock contact data
 const MOCK_CONTACTS: Contact[] = [
@@ -83,12 +85,32 @@ const MOCK_CONTACTS: Contact[] = [
   },
 ];
 
+// Helper function to generate avatar color from name
+const generateAvatarColor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash % 360);
+  return `hsl(${hue}, 70%, 40%)`;
+};
+
+// Helper function to get initials from name
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase();
+};
+
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
+  const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
 
   // Mock contact stages
   const contactStages = [
@@ -109,20 +131,20 @@ export default function ContactsPage() {
       }
     }
   };
-  
+
   const handleExportContacts = () => {
     alert('CSV-Export-Funktion wird implementiert');
   };
 
   const filteredContacts = contacts.filter(contact => {
-    const matchesSearch = 
+    const matchesSearch =
       contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contact.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contact.position.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStage = selectedStage === 'all' || contact.contactStage === selectedStage;
-    
+
     return matchesSearch && matchesStage;
   });
 
@@ -155,124 +177,169 @@ export default function ContactsPage() {
         </div>
       )}
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <ContactFilters 
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedStage={selectedStage}
-            setSelectedStage={setSelectedStage}
-            contactStages={contactStages}
-            onExportContacts={handleExportContacts}
-          />
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <div className="p-4 border-b border-gray-200 bg-gray-50 sm:flex sm:items-center sm:justify-between">
+          <div className="relative max-w-xs w-full">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+            </div>
+            <input
+              type="text"
+              placeholder="Kontakte durchsuchen..."
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
-          {isLoading ? (
-            <div className="p-10 flex justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          <div className="mt-3 flex sm:mt-0 sm:ml-4">
+            <div className="relative inline-block text-left">
+              <button
+                type="button"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={() => setShowFilterMenu(!showFilterMenu)}
+              >
+                <FunnelIcon className="mr-2 h-5 w-5 text-gray-500" aria-hidden="true" />
+                Filter
+                <ChevronDownIcon className="ml-2 h-5 w-5 text-gray-500" aria-hidden="true" />
+              </button>
+
+              {showFilterMenu && (
+                <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                  <div className="py-1" role="menu" aria-orientation="vertical">
+                    <div className="px-4 py-2 text-sm text-gray-700 font-medium border-b border-gray-100">
+                      Phase filtern
+                    </div>
+                    {contactStages.map((stage) => (
+                      <button
+                        key={stage.value}
+                        className={`${selectedStage === stage.value ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                          } block px-4 py-2 text-sm w-full text-left hover:bg-gray-50`}
+                        onClick={() => {
+                          setSelectedStage(stage.value);
+                          setShowFilterMenu(false);
+                        }}
+                      >
+                        {stage.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          ) : filteredContacts.length === 0 ? (
-            <div className="p-10 text-center text-gray-500">
-              {searchTerm || selectedStage !== 'all'
-                ? 'Keine Kontakte entsprechen Ihren Filterkriterien.'
-                : 'Keine Kontakte vorhanden. Erstellen Sie Ihren ersten Kontakt!'}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Position / Unternehmen
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Kontakt
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Phase
-                    </th>
-                    <th scope="col" className="relative px-6 py-3">
-                      <span className="sr-only">Aktionen</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredContacts.map((contact) => (
-                    <tr key={contact.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full" 
-                               style={{ backgroundColor: stringToColor(contact.name) }}>
-                            <span className="text-white font-medium">{getInitials(contact.name)}</span>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              <Link href={`/contacts/${contact.id}`} className="hover:text-indigo-600">
-                                {contact.name}
-                              </Link>
-                            </div>
+
+            <button
+              type="button"
+              className="ml-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              onClick={handleExportContacts}
+            >
+              <ArrowDownTrayIcon className="mr-2 h-5 w-5 text-gray-500" />
+              Exportieren
+            </button>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="p-10 flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          </div>
+        ) : filteredContacts.length === 0 ? (
+          <div className="p-10 text-center text-gray-500">
+            {searchTerm || selectedStage !== 'all'
+              ? 'Keine Kontakte entsprechen Ihren Filterkriterien.'
+              : 'Keine Kontakte vorhanden. Erstellen Sie Ihren ersten Kontakt!'}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Position / Unternehmen
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Kontakt
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Phase
+                  </th>
+                  <th scope="col" className="relative px-6 py-3">
+                    <span className="sr-only">Aktionen</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredContacts.map((contact) => (
+                  <tr key={contact.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full text-white"
+                          style={{ backgroundColor: generateAvatarColor(contact.name) }}>
+                          <span className="font-medium">{getInitials(contact.name)}</span>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            <Link href={`/contacts/${contact.id}`} className="hover:text-indigo-600">
+                              {contact.name}
+                            </Link>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{contact.position}</div>
-                        <div className="text-sm text-gray-500">{contact.company}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-900 mb-1">
-                          <EnvelopeIcon className="mr-2 h-4 w-4 text-gray-400" />
-                          <a href={`mailto:${contact.email}`} className="hover:text-indigo-600">
-                            {contact.email}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{contact.position}</div>
+                      <div className="text-sm text-gray-500">{contact.company}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center text-sm text-gray-900 mb-1">
+                        <EnvelopeIcon className="mr-2 h-4 w-4 text-gray-400" />
+                        <a href={`mailto:${contact.email}`} className="hover:text-indigo-600">
+                          {contact.email}
+                        </a>
+                      </div>
+                      {contact.phone && (
+                        <div className="flex items-center text-sm text-gray-500">
+                          <PhoneIcon className="mr-2 h-4 w-4 text-gray-400" />
+                          <a href={`tel:${contact.phone}`} className="hover:text-indigo-600">
+                            {contact.phone}
                           </a>
                         </div>
-                        {contact.phone && (
-                          <div className="flex items-center text-sm text-gray-500">
-                            <PhoneIcon className="mr-2 h-4 w-4 text-gray-400" />
-                            <a href={`tel:${contact.phone}`} className="hover:text-indigo-600">
-                              {contact.phone}
-                            </a>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                          ${contact.contactStage === 'lead' ? 'bg-blue-100 text-blue-800' : 
-                            contact.contactStage === 'prospect' ? 'bg-yellow-100 text-yellow-800' : 
-                            contact.contactStage === 'customer' ? 'bg-green-100 text-green-800' : 
-                            'bg-gray-100 text-gray-800'}`}>
-                          {contactStages.find(stage => stage.value === contact.contactStage)?.label || 'Unbekannt'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-2">
-                          <Link href={`/contacts/${contact.id}/edit`}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-gray-400 hover:text-indigo-600"
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-gray-400 hover:text-red-600"
-                            onClick={() => handleDeleteContact(contact.id)}
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        ${contact.contactStage === 'lead' ? 'bg-blue-100 text-blue-800' :
+                          contact.contactStage === 'prospect' ? 'bg-yellow-100 text-yellow-800' :
+                            contact.contactStage === 'customer' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'}`}>
+                        {contactStages.find(stage => stage.value === contact.contactStage)?.label || 'Unbekannt'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <Link href={`/contacts/${contact.id}/edit`}>
+                          <button className="text-gray-400 hover:text-indigo-600">
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                        </Link>
+                        <button
+                          className="text-gray-400 hover:text-red-600"
+                          onClick={() => handleDeleteContact(contact.id)}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

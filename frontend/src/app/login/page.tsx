@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import Link from 'next/link';
 
 // Mocked auth context until we fix the imports
 const useAuth = () => {
@@ -27,14 +26,14 @@ const useAuth = () => {
 };
 
 // Simplified Button component to avoid import issues
-const Button = ({ 
-  children, 
-  className = "", 
+const Button = ({
+  children,
+  className = "",
   type = "button",
   isLoading = false,
   disabled = false,
-  onClick = () => {}
-}: { 
+  onClick = () => { }
+}: {
   children: React.ReactNode;
   className?: string;
   type?: "button" | "submit" | "reset";
@@ -42,7 +41,7 @@ const Button = ({
   disabled?: boolean;
   onClick?: () => void;
 }) => (
-  <button 
+  <button
     type={type}
     disabled={isLoading || disabled}
     onClick={onClick}
@@ -66,7 +65,7 @@ interface LoginFormData {
 export default function LoginPage() {
   const { login, isLoading, error } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const {
     register,
     handleSubmit,
@@ -92,13 +91,13 @@ export default function LoginPage() {
             <h2 className="mb-6 text-center text-2xl font-bold text-gray-900">
               Anmelden
             </h2>
-            
+
             {error && (
               <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
                 <span className="block sm:inline">{error}</span>
               </div>
             )}
-            
+
             <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -109,15 +108,14 @@ export default function LoginPage() {
                     id="email"
                     type="email"
                     autoComplete="email"
-                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                      errors.email ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    {...register('email', { 
+                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${errors.email ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    {...register('email', {
                       required: 'E-Mail wird benötigt',
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                         message: 'Ungültige E-Mail-Adresse',
-                      } 
+                      }
                     })}
                   />
                   {errors.email && (
@@ -135,15 +133,14 @@ export default function LoginPage() {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
-                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                      errors.password ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    {...register('password', { 
+                    className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${errors.password ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    {...register('password', {
                       required: 'Passwort wird benötigt',
                       minLength: {
                         value: 6,
                         message: 'Passwort muss mindestens 6 Zeichen haben',
-                      } 
+                      }
                     })}
                   />
                   <button
