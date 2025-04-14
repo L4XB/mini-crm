@@ -17,9 +17,9 @@ import (
 // @Produce json
 // @Param task body models.Task true "Aufgaben-Daten"
 // @Success 201 {object} models.TaskSwagger
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 400 {object} utils.APIErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /tasks [post]
 func CreateTask(c *gin.Context) {
@@ -75,8 +75,8 @@ func CreateTask(c *gin.Context) {
 // @Param deal_id query int false "Deal-ID"
 // @Param completed query bool false "Abgeschlossen?"
 // @Success 200 {array} models.TaskSwagger
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /tasks [get]
 func GetTasks(c *gin.Context) {
@@ -135,9 +135,9 @@ func GetTasks(c *gin.Context) {
 // @Produce json
 // @Param id path int true "Aufgaben-ID"
 // @Success 200 {object} models.TaskSwagger
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /tasks/{id} [get]
 func GetTask(c *gin.Context) {
@@ -178,11 +178,11 @@ func GetTask(c *gin.Context) {
 // @Param id path int true "Aufgaben-ID"
 // @Param task body models.Task true "Aufgaben-Daten"
 // @Success 200 {object} models.TaskSwagger
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 400 {object} utils.APIErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /tasks/{id} [put]
 func UpdateTask(c *gin.Context) {
@@ -258,11 +258,11 @@ func UpdateTask(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Aufgaben-ID"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Success 200 {object} utils.APISuccessResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /tasks/{id} [delete]
 func DeleteTask(c *gin.Context) {

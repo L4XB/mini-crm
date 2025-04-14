@@ -18,9 +18,9 @@ import (
 // @Produce json
 // @Param id path int true "User-ID"
 // @Success 200 {object} models.SettingsSwagger
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /settings/{id} [get]
 func GetUserSettings(c *gin.Context) {
@@ -72,10 +72,10 @@ func GetUserSettings(c *gin.Context) {
 // @Param id path int true "User-ID"
 // @Param settings body models.Settings true "Einstellungen"
 // @Success 200 {object} models.SettingsSwagger
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 400 {object} utils.APIErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /settings/{id} [put]
 func UpdateSettings(c *gin.Context) {

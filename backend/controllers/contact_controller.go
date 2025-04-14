@@ -17,9 +17,9 @@ import (
 // @Produce json
 // @Param contact body models.Contact true "Kontaktdaten"
 // @Success 201 {object} models.ContactSwagger
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 400 {object} utils.APIErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /contacts [post]
 func CreateContact(c *gin.Context) {
@@ -62,8 +62,8 @@ func CreateContact(c *gin.Context) {
 // @Produce json
 // @Param user_id query int false "User-ID (nur für Admins)"
 // @Success 200 {array} models.ContactSwagger
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /contacts [get]
 func GetContacts(c *gin.Context) {
@@ -105,9 +105,9 @@ func GetContacts(c *gin.Context) {
 // @Produce json
 // @Param id path int true "Kontakt-ID"
 // @Success 200 {object} models.ContactSwagger
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /contacts/{id} [get]
 func GetContact(c *gin.Context) {
@@ -148,11 +148,11 @@ func GetContact(c *gin.Context) {
 // @Param id path int true "Kontakt-ID"
 // @Param contact body models.Contact true "Kontaktdaten"
 // @Success 200 {object} models.ContactSwagger
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 400 {object} utils.APIErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /contacts/{id} [put]
 func UpdateContact(c *gin.Context) {
@@ -210,11 +210,11 @@ func UpdateContact(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Kontakt-ID"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Success 200 {object} utils.APISuccessResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /contacts/{id} [delete]
 func DeleteContact(c *gin.Context) {

@@ -6,20 +6,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ErrorResponse repräsentiert eine Fehlerantwort
+// APIErrorResponse repräsentiert eine Fehlerantwort (für Swagger)
 // @Description Fehlerstruktur für API-Fehler
 // @name ErrorResponse
-type ErrorResponse struct {
+type APIErrorResponse struct {
 	// Erfolg der Anfrage (immer false bei Fehler)
 	Success bool `json:"success" example:"false"`
 	// Fehlernachricht
 	Error string `json:"error" example:"Etwas ist schiefgelaufen"`
 }
 
-// SuccessResponse repräsentiert eine erfolgreiche Antwort
+// APISuccessResponse repräsentiert eine erfolgreiche Antwort (für Swagger)
 // @Description Erfolgsstruktur für API-Antworten
 // @name SuccessResponse
-type SuccessResponse struct {
+type APISuccessResponse struct {
 	// Erfolg der Anfrage (immer true bei Erfolg)
 	Success bool `json:"success" example:"true"`
 	// Nachricht

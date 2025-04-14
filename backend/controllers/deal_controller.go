@@ -17,9 +17,9 @@ import (
 // @Produce json
 // @Param deal body models.Deal true "Deal-Daten"
 // @Success 201 {object} models.DealSwagger
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 400 {object} utils.APIErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /deals [post]
 func CreateDeal(c *gin.Context) {
@@ -74,8 +74,8 @@ func CreateDeal(c *gin.Context) {
 // @Param user_id query int false "User-ID (nur für Admins)"
 // @Param contact_id query int false "Contact-ID"
 // @Success 200 {array} models.DealSwagger
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /deals [get]
 func GetDeals(c *gin.Context) {
@@ -128,9 +128,9 @@ func GetDeals(c *gin.Context) {
 // @Produce json
 // @Param id path int true "Deal-ID"
 // @Success 200 {object} models.DealSwagger
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /deals/{id} [get]
 func GetDeal(c *gin.Context) {
@@ -171,11 +171,11 @@ func GetDeal(c *gin.Context) {
 // @Param id path int true "Deal-ID"
 // @Param deal body models.Deal true "Deal-Daten"
 // @Success 200 {object} models.DealSwagger
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 400 {object} utils.APIErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /deals/{id} [put]
 func UpdateDeal(c *gin.Context) {
@@ -251,11 +251,11 @@ func UpdateDeal(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Deal-ID"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Success 200 {object} utils.APISuccessResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /deals/{id} [delete]
 func DeleteDeal(c *gin.Context) {

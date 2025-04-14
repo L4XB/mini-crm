@@ -17,9 +17,9 @@ import (
 // @Produce json
 // @Param note body models.Note true "Notiz-Daten"
 // @Success 201 {object} models.NoteSwagger
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 400 {object} utils.APIErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /notes [post]
 func CreateNote(c *gin.Context) {
@@ -92,8 +92,8 @@ func CreateNote(c *gin.Context) {
 // @Param contact_id query int false "Contact-ID"
 // @Param deal_id query int false "Deal-ID"
 // @Success 200 {array} models.NoteSwagger
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /notes [get]
 func GetNotes(c *gin.Context) {
@@ -149,9 +149,9 @@ func GetNotes(c *gin.Context) {
 // @Produce json
 // @Param id path int true "Notiz-ID"
 // @Success 200 {object} models.NoteSwagger
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /notes/{id} [get]
 func GetNote(c *gin.Context) {
@@ -192,11 +192,11 @@ func GetNote(c *gin.Context) {
 // @Param id path int true "Notiz-ID"
 // @Param note body models.Note true "Notiz-Daten"
 // @Success 200 {object} models.NoteSwagger
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Failure 400 {object} utils.APIErrorResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /notes/{id} [put]
 func UpdateNote(c *gin.Context) {
@@ -289,11 +289,11 @@ func UpdateNote(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Notiz-ID"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 403 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
+// @Success 200 {object} utils.APISuccessResponse
+// @Failure 401 {object} utils.APIErrorResponse
+// @Failure 403 {object} utils.APIErrorResponse
+// @Failure 404 {object} utils.APIErrorResponse
+// @Failure 500 {object} utils.APIErrorResponse
 // @Security BearerAuth
 // @Router /notes/{id} [delete]
 func DeleteNote(c *gin.Context) {
