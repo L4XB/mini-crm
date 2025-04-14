@@ -9,7 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CreateContact handles the creation of a new contact
+// CreateContact erstellt einen neuen Kontakt
+// @Summary Kontakt anlegen
+// @Description Lege einen neuen Kontakt für den authentifizierten User an
+// @Tags contacts
+// @Accept json
+// @Produce json
+// @Param contact body models.Contact true "Kontaktdaten"
+// @Success 201 {object} models.ContactSwagger
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /contacts [post]
 func CreateContact(c *gin.Context) {
 	var contact models.Contact
 	if err := c.ShouldBindJSON(&contact); err != nil {
@@ -27,6 +39,12 @@ func CreateContact(c *gin.Context) {
 	// Ensure contact belongs to the authenticated user
 	contact.UserID = userID.(uint)
 
+	// Validate contact struct
+	if err := contact.Validate(); err != nil {
+		utils.BadRequestResponse(c, utils.FormatValidationErrors(err))
+		return
+	}
+
 	result := config.DB.Create(&contact)
 	if result.Error != nil {
 		utils.InternalServerErrorResponse(c, "Failed to create contact")
@@ -36,7 +54,18 @@ func CreateContact(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusCreated, "Contact created successfully", contact)
 }
 
-// GetContacts returns all contacts for the authenticated user
+// GetContacts gibt alle Kontakte des authentifizierten Users zurück
+// @Summary Kontakte auflisten
+// @Description Listet alle Kontakte für den angemeldeten User oder Admin auf
+// @Tags contacts
+// @Accept json
+// @Produce json
+// @Param user_id query int false "User-ID (nur für Admins)"
+// @Success 200 {array} models.ContactSwagger
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /contacts [get]
 func GetContacts(c *gin.Context) {
 	var contacts []models.Contact
 	
@@ -68,7 +97,19 @@ func GetContacts(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Contacts retrieved successfully", contacts)
 }
 
-// GetContact returns a specific contact by ID
+// GetContact gibt einen einzelnen Kontakt anhand der ID zurück
+// @Summary Kontakt abrufen
+// @Description Gibt einen Kontakt anhand seiner ID zurück
+// @Tags contacts
+// @Accept json
+// @Produce json
+// @Param id path int true "Kontakt-ID"
+// @Success 200 {object} models.ContactSwagger
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /contacts/{id} [get]
 func GetContact(c *gin.Context) {
 	id := c.Param("id")
 	var contact models.Contact
@@ -98,7 +139,22 @@ func GetContact(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Contact retrieved successfully", contact)
 }
 
-// UpdateContact updates an existing contact
+// UpdateContact aktualisiert einen bestehenden Kontakt
+// @Summary Kontakt aktualisieren
+// @Description Aktualisiert die Daten eines bestehenden Kontakts
+// @Tags contacts
+// @Accept json
+// @Produce json
+// @Param id path int true "Kontakt-ID"
+// @Param contact body models.Contact true "Kontaktdaten"
+// @Success 200 {object} models.ContactSwagger
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /contacts/{id} [put]
 func UpdateContact(c *gin.Context) {
 	id := c.Param("id")
 	
@@ -147,7 +203,20 @@ func UpdateContact(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Contact updated successfully", contact)
 }
 
-// DeleteContact deletes a contact
+// DeleteContact löscht einen Kontakt
+// @Summary Kontakt löschen
+// @Description Löscht einen Kontakt und alle zugehörigen Daten
+// @Tags contacts
+// @Accept json
+// @Produce json
+// @Param id path int true "Kontakt-ID"
+// @Success 200 {object} utils.SuccessResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /contacts/{id} [delete]
 func DeleteContact(c *gin.Context) {
 	id := c.Param("id")
 	

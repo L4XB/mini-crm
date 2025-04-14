@@ -11,7 +11,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// CreateUser handles the creation of a new user (admin only)
+// CreateUser legt einen neuen Nutzer an (nur Admin)
+// @Summary Nutzer anlegen
+// @Description Legt einen neuen Nutzer an (nur Admin)
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param user body models.User true "Nutzer-Daten"
+// @Success 201 {object} models.UserSwagger
+// @Failure 400 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Router /users [post]
+// @Security BearerAuth
 func CreateUser(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -65,7 +76,14 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, user)
 }
 
-// GetUsers returns all users (admin) or just the current user (normal user)
+// GetUsers gibt alle Nutzer zurück (Admin) oder nur sich selbst (User)
+// @Summary Nutzer auflisten
+// @Description Gibt alle Nutzer (Admin) oder nur den eigenen Account (User) zurück
+// @Tags User
+// @Produce json
+// @Success 200 {array} models.UserSwagger
+// @Router /users [get]
+// @Security BearerAuth
 func GetUsers(c *gin.Context) {
 	var users []models.User
 	
@@ -89,7 +107,17 @@ func GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, users)
 }
 
-// GetUser returns a specific user by ID (user can only see their own profile unless admin)
+// GetUser gibt einen bestimmten Nutzer anhand der ID zurück
+// @Summary Nutzer abrufen
+// @Description Gibt einen bestimmten Nutzer anhand der ID zurück (User nur sich selbst, Admin alle)
+// @Tags User
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} models.User
+// @Failure 403 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /users/{id} [get]
+// @Security BearerAuth
 func GetUser(c *gin.Context) {
 	id := c.Param("id")
 	
@@ -125,7 +153,20 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// UpdateUser updates an existing user (users can only update their own profile unless admin)
+// UpdateUser aktualisiert einen Nutzer (User nur sich selbst, Admin alle)
+// @Summary Nutzer aktualisieren
+// @Description Aktualisiert einen Nutzer (User nur sich selbst, Admin alle)
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param user body models.User true "Nutzer-Daten"
+// @Success 200 {object} models.User
+// @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /users/{id} [put]
+// @Security BearerAuth
 func UpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	
@@ -210,7 +251,59 @@ func UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// DeleteUser deletes a user (admin only)
+// DeleteOwnAccount löscht den eigenen Account und alle zugehörigen Daten
+// @Summary Eigenen Account löschen
+// @Description Löscht den eigenen Account und alle zugehörigen Daten
+// @Tags User
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /users/me [delete]
+// @Security BearerAuth
+func DeleteOwnAccount(c *gin.Context) {
+	currentUserID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user information not found in context"})
+		return
+	}
+
+	// Hole User aus der DB
+	var user models.User
+	if result := config.DB.First(&user, currentUserID); result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	// Lösche alle zugehörigen Daten (Contacts, Deals, Tasks, Notes, Settings)
+	tx := config.DB.Begin()
+	tx.Where("user_id = ?", currentUserID).Delete(&models.Contact{})
+	tx.Where("user_id = ?", currentUserID).Delete(&models.Deal{})
+	tx.Where("user_id = ?", currentUserID).Delete(&models.Task{})
+	tx.Where("user_id = ?", currentUserID).Delete(&models.Note{})
+	tx.Where("user_id = ?", currentUserID).Delete(&models.Settings{})
+	tx.Delete(&user)
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete user and related data"})
+		return
+	}
+
+	// Optional: Cookie löschen
+	c.SetCookie("token", "", -1, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{"message": "your account and all related data have been deleted"})
+}
+
+// DeleteUser löscht einen Nutzer (nur Admin)
+// @Summary Nutzer löschen
+// @Description Löscht einen Nutzer und alle zugehörigen Daten (nur Admin)
+// @Tags User
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /users/{id} [delete]
+// @Security BearerAuth
 func DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 	

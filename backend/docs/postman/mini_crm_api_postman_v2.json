@@ -441,6 +441,88 @@
       "description": "Endpunkte und Beispiele für die UI-Entwicklung im Testmodus",
       "item": [
         {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["logout"]
+            },
+            "description": "Loggt den aktuell angemeldeten Nutzer aus. Löscht das Token-Cookie und empfiehlt dem Client, das Token zu löschen."
+          },
+          "response": [
+            {
+              "name": "Erfolgreicher Logout",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/logout",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["logout"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"message\": \"logout successful, please delete your token on client side\"\n}",
+              "cookie": []
+            }
+          ]
+        },
+        {
+          "name": "Account selbst löschen",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Löscht den eigenen Account und alle zugehörigen Daten unwiderruflich."
+          },
+          "response": [
+            {
+              "name": "Account gelöscht",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"message\": \"your account and all related data have been deleted\"\n}",
+              "cookie": []
+            }
+          ]
+        },
+        {
           "name": "Test-Modus Login",
           "request": {
             "method": "POST",

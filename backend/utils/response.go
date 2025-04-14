@@ -6,6 +6,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ErrorResponse repräsentiert eine Fehlerantwort
+// @Description Fehlerstruktur für API-Fehler
+// @name ErrorResponse
+type ErrorResponse struct {
+	// Erfolg der Anfrage (immer false bei Fehler)
+	Success bool `json:"success" example:"false"`
+	// Fehlernachricht
+	Error string `json:"error" example:"Etwas ist schiefgelaufen"`
+}
+
+// SuccessResponse repräsentiert eine erfolgreiche Antwort
+// @Description Erfolgsstruktur für API-Antworten
+// @name SuccessResponse
+type SuccessResponse struct {
+	// Erfolg der Anfrage (immer true bei Erfolg)
+	Success bool `json:"success" example:"true"`
+	// Nachricht
+	Message string `json:"message" example:"Aktion erfolgreich"`
+}
+
 // Response struct for standardized API responses
 type Response struct {
 	Success bool        `json:"success"`

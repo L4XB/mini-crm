@@ -1,3 +1,12 @@
+// @title Mini CRM API
+// @version 1.0
+// @description API Dokumentation für dein Mini CRM
+// @host localhost:8080
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
 package main
 
 import (

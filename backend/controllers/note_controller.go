@@ -9,7 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CreateNote handles the creation of a new note
+// CreateNote erstellt eine neue Notiz
+// @Summary Notiz anlegen
+// @Description Lege eine neue Notiz für den authentifizierten User an
+// @Tags notes
+// @Accept json
+// @Produce json
+// @Param note body models.Note true "Notiz-Daten"
+// @Success 201 {object} models.NoteSwagger
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /notes [post]
 func CreateNote(c *gin.Context) {
 	var note models.Note
 	if err := c.ShouldBindJSON(&note); err != nil {
@@ -70,7 +82,20 @@ func CreateNote(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusCreated, "Note created successfully", note)
 }
 
-// GetNotes returns all notes, optionally filtered by user_id, contact_id, or deal_id
+// GetNotes gibt alle Notizen des authentifizierten Users zurück
+// @Summary Notizen auflisten
+// @Description Listet alle Notizen für den angemeldeten User oder Admin auf
+// @Tags notes
+// @Accept json
+// @Produce json
+// @Param user_id query int false "User-ID (nur für Admins)"
+// @Param contact_id query int false "Contact-ID"
+// @Param deal_id query int false "Deal-ID"
+// @Success 200 {array} models.NoteSwagger
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /notes [get]
 func GetNotes(c *gin.Context) {
 	var notes []models.Note
 
@@ -116,7 +141,19 @@ func GetNotes(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Notes retrieved successfully", notes)
 }
 
-// GetNote returns a specific note by ID
+// GetNote gibt eine einzelne Notiz anhand der ID zurück
+// @Summary Notiz abrufen
+// @Description Gibt eine Notiz anhand ihrer ID zurück
+// @Tags notes
+// @Accept json
+// @Produce json
+// @Param id path int true "Notiz-ID"
+// @Success 200 {object} models.NoteSwagger
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /notes/{id} [get]
 func GetNote(c *gin.Context) {
 	id := c.Param("id")
 	var note models.Note
@@ -146,7 +183,22 @@ func GetNote(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Note retrieved successfully", note)
 }
 
-// UpdateNote updates an existing note
+// UpdateNote aktualisiert eine bestehende Notiz
+// @Summary Notiz aktualisieren
+// @Description Aktualisiert die Daten einer bestehenden Notiz
+// @Tags notes
+// @Accept json
+// @Produce json
+// @Param id path int true "Notiz-ID"
+// @Param note body models.Note true "Notiz-Daten"
+// @Success 200 {object} models.NoteSwagger
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /notes/{id} [put]
 func UpdateNote(c *gin.Context) {
 	id := c.Param("id")
 	
@@ -230,7 +282,20 @@ func UpdateNote(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Note updated successfully", note)
 }
 
-// DeleteNote deletes a note
+// DeleteNote löscht eine Notiz
+// @Summary Notiz löschen
+// @Description Löscht eine Notiz
+// @Tags notes
+// @Accept json
+// @Produce json
+// @Param id path int true "Notiz-ID"
+// @Success 200 {object} utils.SuccessResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /notes/{id} [delete]
 func DeleteNote(c *gin.Context) {
 	id := c.Param("id")
 	

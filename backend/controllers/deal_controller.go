@@ -9,7 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CreateDeal handles the creation of a new deal
+// CreateDeal erstellt einen neuen Deal
+// @Summary Deal anlegen
+// @Description Lege einen neuen Deal für den authentifizierten User an
+// @Tags deals
+// @Accept json
+// @Produce json
+// @Param deal body models.Deal true "Deal-Daten"
+// @Success 201 {object} models.DealSwagger
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /deals [post]
 func CreateDeal(c *gin.Context) {
 	var deal models.Deal
 	if err := c.ShouldBindJSON(&deal); err != nil {
@@ -53,7 +65,19 @@ func CreateDeal(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusCreated, "Deal created successfully", deal)
 }
 
-// GetDeals returns all deals for the authenticated user
+// GetDeals gibt alle Deals des authentifizierten Users zurück
+// @Summary Deals auflisten
+// @Description Listet alle Deals für den angemeldeten User oder Admin auf
+// @Tags deals
+// @Accept json
+// @Produce json
+// @Param user_id query int false "User-ID (nur für Admins)"
+// @Param contact_id query int false "Contact-ID"
+// @Success 200 {array} models.DealSwagger
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /deals [get]
 func GetDeals(c *gin.Context) {
 	var deals []models.Deal
 	
@@ -96,7 +120,19 @@ func GetDeals(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Deals retrieved successfully", deals)
 }
 
-// GetDeal returns a specific deal by ID
+// GetDeal gibt einen einzelnen Deal anhand der ID zurück
+// @Summary Deal abrufen
+// @Description Gibt einen Deal anhand seiner ID zurück
+// @Tags deals
+// @Accept json
+// @Produce json
+// @Param id path int true "Deal-ID"
+// @Success 200 {object} models.DealSwagger
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /deals/{id} [get]
 func GetDeal(c *gin.Context) {
 	id := c.Param("id")
 	var deal models.Deal
@@ -126,7 +162,22 @@ func GetDeal(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Deal retrieved successfully", deal)
 }
 
-// UpdateDeal updates an existing deal
+// UpdateDeal aktualisiert einen bestehenden Deal
+// @Summary Deal aktualisieren
+// @Description Aktualisiert die Daten eines bestehenden Deals
+// @Tags deals
+// @Accept json
+// @Produce json
+// @Param id path int true "Deal-ID"
+// @Param deal body models.Deal true "Deal-Daten"
+// @Success 200 {object} models.DealSwagger
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /deals/{id} [put]
 func UpdateDeal(c *gin.Context) {
 	id := c.Param("id")
 	
@@ -193,7 +244,20 @@ func UpdateDeal(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Deal updated successfully", deal)
 }
 
-// DeleteDeal deletes a deal
+// DeleteDeal löscht einen Deal
+// @Summary Deal löschen
+// @Description Löscht einen Deal und alle zugehörigen Daten
+// @Tags deals
+// @Accept json
+// @Produce json
+// @Param id path int true "Deal-ID"
+// @Success 200 {object} utils.SuccessResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /deals/{id} [delete]
 func DeleteDeal(c *gin.Context) {
 	id := c.Param("id")
 	

@@ -9,7 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CreateTask handles the creation of a new task
+// CreateTask erstellt eine neue Aufgabe
+// @Summary Aufgabe anlegen
+// @Description Lege eine neue Aufgabe für den authentifizierten User an
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param task body models.Task true "Aufgaben-Daten"
+// @Success 201 {object} models.TaskSwagger
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /tasks [post]
 func CreateTask(c *gin.Context) {
 	var task models.Task
 	if err := c.ShouldBindJSON(&task); err != nil {
@@ -53,7 +65,20 @@ func CreateTask(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusCreated, "Task created successfully", task)
 }
 
-// GetTasks returns all tasks, optionally filtered by user_id, deal_id, or completion status
+// GetTasks gibt alle Aufgaben des authentifizierten Users zurück
+// @Summary Aufgaben auflisten
+// @Description Listet alle Aufgaben für den angemeldeten User oder Admin auf
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param user_id query int false "User-ID (nur für Admins)"
+// @Param deal_id query int false "Deal-ID"
+// @Param completed query bool false "Abgeschlossen?"
+// @Success 200 {array} models.TaskSwagger
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /tasks [get]
 func GetTasks(c *gin.Context) {
 	var tasks []models.Task
 	
@@ -102,7 +127,19 @@ func GetTasks(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Tasks retrieved successfully", tasks)
 }
 
-// GetTask returns a specific task by ID
+// GetTask gibt eine einzelne Aufgabe anhand der ID zurück
+// @Summary Aufgabe abrufen
+// @Description Gibt eine Aufgabe anhand ihrer ID zurück
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path int true "Aufgaben-ID"
+// @Success 200 {object} models.TaskSwagger
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /tasks/{id} [get]
 func GetTask(c *gin.Context) {
 	id := c.Param("id")
 	var task models.Task
@@ -132,7 +169,22 @@ func GetTask(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Task retrieved successfully", task)
 }
 
-// UpdateTask updates an existing task
+// UpdateTask aktualisiert eine bestehende Aufgabe
+// @Summary Aufgabe aktualisieren
+// @Description Aktualisiert die Daten einer bestehenden Aufgabe
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path int true "Aufgaben-ID"
+// @Param task body models.Task true "Aufgaben-Daten"
+// @Success 200 {object} models.TaskSwagger
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /tasks/{id} [put]
 func UpdateTask(c *gin.Context) {
 	id := c.Param("id")
 	
@@ -199,7 +251,20 @@ func UpdateTask(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Task updated successfully", task)
 }
 
-// DeleteTask deletes a task
+// DeleteTask löscht eine Aufgabe
+// @Summary Aufgabe löschen
+// @Description Löscht eine Aufgabe
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path int true "Aufgaben-ID"
+// @Success 200 {object} utils.SuccessResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Security BearerAuth
+// @Router /tasks/{id} [delete]
 func DeleteTask(c *gin.Context) {
 	id := c.Param("id")
 	
