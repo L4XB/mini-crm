@@ -2,26 +2,42 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { mockAuthService } from '@/services/mockAuth';
 
-// Mocked auth context until we fix the imports
+// Authentifizierungskontext
 const useAuth = () => {
-  return {
-    login: async (email: string, password: string) => {
-      console.log('Login attempt with:', email, password);
-      // Simulate login delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // For demo, we'll accept any login
-      localStorage.setItem('token', 'demo_token');
-      localStorage.setItem('user', JSON.stringify({
-        id: 1,
-        username: 'Admin',
-        email: email,
-        role: 'admin'
-      }));
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
+    
+    console.log('Versuche Login mit:', { email, password: '***' });
+    
+    try {
+      // Verwende den Mock-Authentifizierungsdienst, da die tatsächlichen API-Endpoints
+      // nicht wie in der Dokumentation beschrieben funktionieren
+      console.log('Versuche Login mit Mock-Service...');
+      const data = await mockAuthService.login(email, password);
+      console.log('Login-Antwort:', data);
+      
+      localStorage.setItem('token', data.token);
+      // refreshToken ist im Mock nicht implementiert
+      localStorage.setItem('user', JSON.stringify(data.user));
       window.location.href = '/dashboard';
-    },
-    isLoading: false,
-    error: null
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err instanceof Error ? err.message : 'Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    login,
+    isLoading,
+    error
   };
 };
 

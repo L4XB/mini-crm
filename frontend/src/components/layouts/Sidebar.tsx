@@ -9,7 +9,6 @@ import {
   CurrencyDollarIcon, 
   ClipboardDocumentListIcon, 
   DocumentTextIcon,
-  ChartBarIcon,
   Cog6ToothIcon,
   ArrowLeftOnRectangleIcon,
   XMarkIcon,
@@ -42,7 +41,6 @@ export default function Sidebar() {
     { name: 'Deals', href: '/deals', icon: CurrencyDollarIcon, badge: 2 },
     { name: 'Aufgaben', href: '/tasks', icon: ClipboardDocumentListIcon, badge: 5 },
     { name: 'Notizen', href: '/notes', icon: DocumentTextIcon },
-    { name: 'Berichte', href: '/reports', icon: ChartBarIcon },
     { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon },
   ];
 

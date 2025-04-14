@@ -8,6 +8,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10s Timeout
 });
 
 // Request Interceptor für JWT-Token
@@ -61,11 +62,11 @@ api.interceptors.response.use(
 // Auth Services
 export const authService = {
   login: async (email: string, password: string) => {
-    const response = await api.post('/api/v1/auth/login', { email, password });
+    const response = await api.post('/auth/login', { email, password });
     return response.data;
   },
   register: async (userData: { email: string; password: string; username: string }) => {
-    const response = await api.post('/api/v1/auth/register', userData);
+    const response = await api.post('/auth/register', userData);
     return response.data;
   },
   logout: () => {
@@ -74,7 +75,7 @@ export const authService = {
     localStorage.removeItem('user');
   },
   refreshToken: async (refreshToken: string) => {
-    const response = await api.post('/api/v1/auth/refresh', { refresh_token: refreshToken });
+    const response = await api.post('/auth/refresh', { refresh_token: refreshToken });
     return response.data;
   },
   getCurrentUser: () => {
@@ -90,23 +91,23 @@ export const authService = {
 // Contacts Services
 export const contactsService = {
   getAll: async () => {
-    const response = await api.get('/api/v1/contacts');
+    const response = await api.get('/contacts');
     return response.data;
   },
   get: async (id: number) => {
-    const response = await api.get(`/api/v1/contacts/${id}`);
+    const response = await api.get(`/contacts/${id}`);
     return response.data;
   },
   create: async (data: any) => {
-    const response = await api.post('/api/v1/contacts', data);
+    const response = await api.post('/contacts', data);
     return response.data;
   },
   update: async (id: number, data: any) => {
-    const response = await api.put(`/api/v1/contacts/${id}`, data);
+    const response = await api.put(`/contacts/${id}`, data);
     return response.data;
   },
   delete: async (id: number) => {
-    const response = await api.delete(`/api/v1/contacts/${id}`);
+    const response = await api.delete(`/contacts/${id}`);
     return response.data;
   }
 };
@@ -114,23 +115,23 @@ export const contactsService = {
 // Deals Services
 export const dealsService = {
   getAll: async () => {
-    const response = await api.get('/api/v1/deals');
+    const response = await api.get('/deals');
     return response.data;
   },
   get: async (id: number) => {
-    const response = await api.get(`/api/v1/deals/${id}`);
+    const response = await api.get(`/deals/${id}`);
     return response.data;
   },
   create: async (data: any) => {
-    const response = await api.post('/api/v1/deals', data);
+    const response = await api.post('/deals', data);
     return response.data;
   },
   update: async (id: number, data: any) => {
-    const response = await api.put(`/api/v1/deals/${id}`, data);
+    const response = await api.put(`/deals/${id}`, data);
     return response.data;
   },
   delete: async (id: number) => {
-    const response = await api.delete(`/api/v1/deals/${id}`);
+    const response = await api.delete(`/deals/${id}`);
     return response.data;
   }
 };
@@ -138,27 +139,27 @@ export const dealsService = {
 // Tasks Services
 export const tasksService = {
   getAll: async () => {
-    const response = await api.get('/api/v1/tasks');
+    const response = await api.get('/tasks');
     return response.data;
   },
   get: async (id: number) => {
-    const response = await api.get(`/api/v1/tasks/${id}`);
+    const response = await api.get(`/tasks/${id}`);
     return response.data;
   },
   create: async (data: any) => {
-    const response = await api.post('/api/v1/tasks', data);
+    const response = await api.post('/tasks', data);
     return response.data;
   },
   update: async (id: number, data: any) => {
-    const response = await api.put(`/api/v1/tasks/${id}`, data);
+    const response = await api.put(`/tasks/${id}`, data);
     return response.data;
   },
   delete: async (id: number) => {
-    const response = await api.delete(`/api/v1/tasks/${id}`);
+    const response = await api.delete(`/tasks/${id}`);
     return response.data;
   },
   toggleComplete: async (id: number) => {
-    const response = await api.patch(`/api/v1/tasks/${id}/toggle`);
+    const response = await api.patch(`/tasks/${id}/toggle`);
     return response.data;
   }
 };
@@ -166,23 +167,23 @@ export const tasksService = {
 // Notes Services
 export const notesService = {
   getAll: async () => {
-    const response = await api.get('/api/v1/notes');
+    const response = await api.get('/notes');
     return response.data;
   },
   get: async (id: number) => {
-    const response = await api.get(`/api/v1/notes/${id}`);
+    const response = await api.get(`/notes/${id}`);
     return response.data;
   },
   create: async (data: any) => {
-    const response = await api.post('/api/v1/notes', data);
+    const response = await api.post('/notes', data);
     return response.data;
   },
   update: async (id: number, data: any) => {
-    const response = await api.put(`/api/v1/notes/${id}`, data);
+    const response = await api.put(`/notes/${id}`, data);
     return response.data;
   },
   delete: async (id: number) => {
-    const response = await api.delete(`/api/v1/notes/${id}`);
+    const response = await api.delete(`/notes/${id}`);
     return response.data;
   }
 };

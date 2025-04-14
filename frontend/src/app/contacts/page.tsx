@@ -13,7 +13,8 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import notificationService from '@/services/notificationService';
 
 // Mock contact data
 const MOCK_CONTACTS: Contact[] = [
@@ -108,6 +109,17 @@ export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Demo-Benachrichtigung beim Laden der Seite
+  useEffect(() => {
+    // Zeigt beim ersten Laden eine Benachrichtigung an
+    if (contacts.length > 0) {
+      notificationService.info(
+        `${contacts.length} Kontakte geladen`, 
+        { autoClose: 3000 }
+      );
+    }
+  }, [contacts.length]); // contacts.length als Abhängigkeit hinzugefügt
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
@@ -124,16 +136,32 @@ export default function ContactsPage() {
   const handleDeleteContact = (id: number) => {
     if (window.confirm('Sind Sie sicher, dass Sie diesen Kontakt löschen möchten?')) {
       try {
-        setContacts(contacts.filter(contact => contact.id !== id));
+        // In einer echten Anwendung würde hier ein API-Aufruf erfolgen
+        const loadingToastId = notificationService.loading('Kontakt wird gelöscht...');
+        
+        // Simuliere API-Verzögerung
+        setTimeout(() => {
+          setContacts(contacts.filter(contact => contact.id !== id));
+          
+          // Erfolgsbenachrichtigung anzeigen
+          notificationService.update(
+            loadingToastId, 
+            'Kontakt erfolgreich gelöscht', 
+            'success'
+          );
+        }, 500); // 500ms Verzögerung zur Simulation
       } catch (err) {
         console.error('Error deleting contact:', err);
         setError('Fehler beim Löschen des Kontakts.');
+        notificationService.error('Kontakt konnte nicht gelöscht werden');
       }
     }
   };
 
   const handleExportContacts = () => {
     try {
+      const loadingToastId = notificationService.loading('Kontakte werden exportiert...');
+      
       // CSV-Header erstellen
       let csvContent = 'data:text/csv;charset=utf-8,';
       csvContent += 'ID,Name,E-Mail,Telefon,Position,Unternehmen,Kontaktphase,Notizen,Tags\n';
@@ -162,21 +190,32 @@ export default function ContactsPage() {
         ].join(',') + '\n';
       });
       
-      // Erstelle einen Download-Link
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement('a');
-      link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `Kontakte_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      
-      // Klicke auf den Link, um den Download zu starten
-      link.click();
-      
-      // Entferne den Link wieder
-      document.body.removeChild(link);
+      // Kurze Verzögerung, damit die Lade-Benachrichtigung sichtbar ist
+      setTimeout(() => {
+        // Erstelle einen Download-Link
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `Kontakte_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        
+        // Klicke auf den Link, um den Download zu starten
+        link.click();
+        
+        // Entferne den Link wieder
+        document.body.removeChild(link);
+        
+        // Erfolgsbenachrichtigung
+        notificationService.update(
+          loadingToastId,
+          `${contactsToExport.length} Kontakte erfolgreich exportiert`,
+          'success'
+        );
+      }, 800);
     } catch (err) {
       console.error('Fehler beim Exportieren der Kontakte:', err);
       setError('Kontakte konnten nicht exportiert werden. Bitte versuchen Sie es später erneut.');
+      notificationService.error('Kontakte konnten nicht exportiert werden');
     }
   };
 
