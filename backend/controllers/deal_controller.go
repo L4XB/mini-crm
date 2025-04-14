@@ -3,7 +3,9 @@ package controllers
 import (
 	"net/http"
 
+	"github.com/deinname/mini-crm-backend/config"
 	"github.com/deinname/mini-crm-backend/models"
+	"github.com/deinname/mini-crm-backend/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,38 +13,87 @@ import (
 func CreateDeal(c *gin.Context) {
 	var deal models.Deal
 	if err := c.ShouldBindJSON(&deal); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.BadRequestResponse(c, utils.FormatValidationErrors(err))
 		return
 	}
 
-	result := DB.Create(&deal)
+	// Set current user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+
+	// Ensure deal belongs to the authenticated user
+	deal.UserID = userID.(uint)
+	
+	// Validate that referenced contact exists and belongs to user
+	if deal.ContactID > 0 {
+		var contact models.Contact
+		result := config.DB.Where("id = ?", deal.ContactID).First(&contact)
+		if result.Error != nil {
+			utils.BadRequestResponse(c, "Referenced contact does not exist")
+			return
+		}
+		
+		// Check contact ownership unless admin
+		userRole, _ := c.Get("user_role")
+		if userRole != "admin" && contact.UserID != userID.(uint) {
+			utils.ForbiddenResponse(c, "You cannot create a deal for a contact that doesn't belong to you")
+			return
+		}
+	}
+
+	result := config.DB.Create(&deal)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		utils.InternalServerErrorResponse(c, "Failed to create deal")
 		return
 	}
 
-	c.JSON(http.StatusCreated, deal)
+	utils.SuccessResponse(c, http.StatusCreated, "Deal created successfully", deal)
 }
 
-// GetDeals returns all deals
+// GetDeals returns all deals for the authenticated user
 func GetDeals(c *gin.Context) {
 	var deals []models.Deal
 	
-	// Support filtering by user_id or contact_id
-	userID := c.Query("user_id")
+	// Get authenticated user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+	
+	// Get user role from context
+	userRole, _ := c.Get("user_role")
+	
+	// Query parameters
+	queryUserID := c.Query("user_id")
 	contactID := c.Query("contact_id")
 	
-	if userID != "" && contactID != "" {
-		DB.Where("user_id = ? AND contact_id = ?", userID, contactID).Find(&deals)
-	} else if userID != "" {
-		DB.Where("user_id = ?", userID).Find(&deals)
-	} else if contactID != "" {
-		DB.Where("contact_id = ?", contactID).Find(&deals)
+	// Build query
+	query := config.DB
+	
+	// Admin can filter by any user_id or get all deals
+	if userRole == "admin" {
+		// Apply filters if provided
+		if queryUserID != "" {
+			query = query.Where("user_id = ?", queryUserID)
+		}
 	} else {
-		DB.Find(&deals)
+		// Regular users can only access their own deals
+		query = query.Where("user_id = ?", userID)
 	}
+	
+	// Apply contact filter if provided
+	if contactID != "" {
+		query = query.Where("contact_id = ?", contactID)
+	}
+	
+	// Execute query
+	query.Find(&deals)
 
-	c.JSON(http.StatusOK, deals)
+	utils.SuccessResponse(c, http.StatusOK, "Deals retrieved successfully", deals)
 }
 
 // GetDeal returns a specific deal by ID
@@ -50,45 +101,142 @@ func GetDeal(c *gin.Context) {
 	id := c.Param("id")
 	var deal models.Deal
 	
+	// Get authenticated user ID and role from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+	
+	userRole, _ := c.Get("user_role")
+	
 	// Preload related objects for more complete data
-	result := DB.Preload("Contact").Preload("Tasks").First(&deal, id)
+	result := config.DB.Preload("Contact").Preload("Tasks").First(&deal, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
+		utils.NotFoundResponse(c, "Deal not found")
+		return
+	}
+	
+	// Check if user is authorized to access this deal
+	if userRole != "admin" && deal.UserID != userID.(uint) {
+		utils.ForbiddenResponse(c, "You do not have permission to access this deal")
 		return
 	}
 
-	c.JSON(http.StatusOK, deal)
+	utils.SuccessResponse(c, http.StatusOK, "Deal retrieved successfully", deal)
 }
 
 // UpdateDeal updates an existing deal
 func UpdateDeal(c *gin.Context) {
 	id := c.Param("id")
+	
+	// Get authenticated user ID and role from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+	
+	userRole, _ := c.Get("user_role")
+	
+	// Find existing deal
 	var deal models.Deal
-	result := DB.First(&deal, id)
+	result := config.DB.First(&deal, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
+		utils.NotFoundResponse(c, "Deal not found")
 		return
 	}
-
+	
+	// Check if user is authorized to update this deal
+	if userRole != "admin" && deal.UserID != userID.(uint) {
+		utils.ForbiddenResponse(c, "You do not have permission to update this deal")
+		return
+	}
+	
+	// Store original IDs to prevent changing ownership
+	originalUserID := deal.UserID
+	originalContactID := deal.ContactID
+	
+	// Bind JSON to deal
 	if err := c.ShouldBindJSON(&deal); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.BadRequestResponse(c, utils.FormatValidationErrors(err))
+		return
+	}
+	
+	// Preserve original userID (prevent changing ownership)
+	deal.UserID = originalUserID
+	
+	// Check if contact ID is being changed
+	if deal.ContactID != originalContactID {
+		// Verify new contact exists and belongs to user
+		var contact models.Contact
+		result := config.DB.Where("id = ?", deal.ContactID).First(&contact)
+		if result.Error != nil {
+			utils.BadRequestResponse(c, "Referenced contact does not exist")
+			return
+		}
+		
+		// Check contact ownership unless admin
+		if userRole != "admin" && contact.UserID != userID.(uint) {
+			utils.ForbiddenResponse(c, "You cannot assign a deal to a contact that doesn't belong to you")
+			return
+		}
+	}
+	
+	// Save updated deal
+	result = config.DB.Save(&deal)
+	if result.Error != nil {
+		utils.InternalServerErrorResponse(c, "Failed to update deal")
 		return
 	}
 
-	DB.Save(&deal)
-	c.JSON(http.StatusOK, deal)
+	utils.SuccessResponse(c, http.StatusOK, "Deal updated successfully", deal)
 }
 
 // DeleteDeal deletes a deal
 func DeleteDeal(c *gin.Context) {
 	id := c.Param("id")
+	
+	// Get authenticated user ID and role from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+	
+	userRole, _ := c.Get("user_role")
+	
+	// Find deal to delete
 	var deal models.Deal
-	result := DB.First(&deal, id)
+	result := config.DB.First(&deal, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
+		utils.NotFoundResponse(c, "Deal not found")
+		return
+	}
+	
+	// Check if user is authorized to delete this deal
+	if userRole != "admin" && deal.UserID != userID.(uint) {
+		utils.ForbiddenResponse(c, "You do not have permission to delete this deal")
+		return
+	}
+	
+	// Use a transaction to delete associated data
+	tx := config.DB.Begin()
+	
+	// Delete related tasks
+	tx.Where("deal_id = ?", id).Delete(&models.Task{})
+	
+	// Delete related notes
+	tx.Where("deal_id = ?", id).Delete(&models.Note{})
+	
+	// Delete the deal
+	tx.Delete(&deal)
+	
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to delete deal and related data")
 		return
 	}
 
-	DB.Delete(&deal)
-	c.JSON(http.StatusOK, gin.H{"message": "Deal deleted successfully"})
+	utils.SuccessResponse(c, http.StatusOK, "Deal and related data deleted successfully", nil)
 }

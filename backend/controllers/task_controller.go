@@ -3,7 +3,9 @@ package controllers
 import (
 	"net/http"
 
+	"github.com/deinname/mini-crm-backend/config"
 	"github.com/deinname/mini-crm-backend/models"
+	"github.com/deinname/mini-crm-backend/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,42 +13,93 @@ import (
 func CreateTask(c *gin.Context) {
 	var task models.Task
 	if err := c.ShouldBindJSON(&task); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.BadRequestResponse(c, utils.FormatValidationErrors(err))
 		return
 	}
 
-	result := DB.Create(&task)
+	// Set current user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+
+	// Ensure task belongs to the authenticated user
+	task.UserID = userID.(uint)
+	
+	// Validate that referenced deal exists and belongs to user
+	if task.DealID > 0 {
+		var deal models.Deal
+		result := config.DB.Where("id = ?", task.DealID).First(&deal)
+		if result.Error != nil {
+			utils.BadRequestResponse(c, "Referenced deal does not exist")
+			return
+		}
+		
+		// Check deal ownership unless admin
+		userRole, _ := c.Get("user_role")
+		if userRole != "admin" && deal.UserID != userID.(uint) {
+			utils.ForbiddenResponse(c, "You cannot create a task for a deal that doesn't belong to you")
+			return
+		}
+	}
+
+	result := config.DB.Create(&task)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		utils.InternalServerErrorResponse(c, "Failed to create task")
 		return
 	}
 
-	c.JSON(http.StatusCreated, task)
+	utils.SuccessResponse(c, http.StatusCreated, "Task created successfully", task)
 }
 
-// GetTasks returns all tasks, optionally filtered by user_id or deal_id
+// GetTasks returns all tasks, optionally filtered by user_id, deal_id, or completion status
 func GetTasks(c *gin.Context) {
 	var tasks []models.Task
 	
-	// Support filtering by user_id or deal_id
-	userID := c.Query("user_id")
+	// Get authenticated user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+	
+	// Get user role from context
+	userRole, _ := c.Get("user_role")
+	
+	// Query parameters
+	queryUserID := c.Query("user_id")
 	dealID := c.Query("deal_id")
 	completed := c.Query("completed")
 	
-	query := DB
+	// Build query
+	query := config.DB
 	
-	if userID != "" {
+	// Admin can filter by any user_id or get all tasks
+	if userRole == "admin" {
+		if queryUserID != "" {
+			query = query.Where("user_id = ?", queryUserID)
+		}
+	} else {
+		// Regular users can only see their own tasks
 		query = query.Where("user_id = ?", userID)
 	}
+	
+	// Apply additional filters
 	if dealID != "" {
 		query = query.Where("deal_id = ?", dealID)
 	}
 	if completed != "" {
 		query = query.Where("completed = ?", completed == "true")
 	}
+
+	// Order by due date with incomplete tasks first
+	query = query.Order("completed ASC, due_date ASC")
 	
+	// Execute query
 	query.Find(&tasks)
-	c.JSON(http.StatusOK, tasks)
+	
+	utils.SuccessResponse(c, http.StatusOK, "Tasks retrieved successfully", tasks)
 }
 
 // GetTask returns a specific task by ID
@@ -54,59 +107,171 @@ func GetTask(c *gin.Context) {
 	id := c.Param("id")
 	var task models.Task
 	
-	result := DB.Preload("Deal").First(&task, id)
+	// Get authenticated user ID and role from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+	
+	userRole, _ := c.Get("user_role")
+	
+	// Preload related objects for more complete data
+	result := config.DB.Preload("Deal").First(&task, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+		utils.NotFoundResponse(c, "Task not found")
+		return
+	}
+	
+	// Check if user is authorized to access this task
+	if userRole != "admin" && task.UserID != userID.(uint) {
+		utils.ForbiddenResponse(c, "You do not have permission to access this task")
 		return
 	}
 
-	c.JSON(http.StatusOK, task)
+	utils.SuccessResponse(c, http.StatusOK, "Task retrieved successfully", task)
 }
 
 // UpdateTask updates an existing task
 func UpdateTask(c *gin.Context) {
 	id := c.Param("id")
+	
+	// Get authenticated user ID and role from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+	
+	userRole, _ := c.Get("user_role")
+	
+	// Find existing task
 	var task models.Task
-	result := DB.First(&task, id)
+	result := config.DB.First(&task, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+		utils.NotFoundResponse(c, "Task not found")
 		return
 	}
-
+	
+	// Check if user is authorized to update this task
+	if userRole != "admin" && task.UserID != userID.(uint) {
+		utils.ForbiddenResponse(c, "You do not have permission to update this task")
+		return
+	}
+	
+	// Store original values to prevent changing ownership
+	originalUserID := task.UserID
+	originalDealID := task.DealID
+	
+	// Bind JSON to task
 	if err := c.ShouldBindJSON(&task); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.BadRequestResponse(c, utils.FormatValidationErrors(err))
+		return
+	}
+	
+	// Preserve original user ID (prevent changing ownership)
+	task.UserID = originalUserID
+	
+	// Check if deal ID is being changed
+	if task.DealID != originalDealID && task.DealID > 0 {
+		// Verify deal exists and belongs to user
+		var deal models.Deal
+		result := config.DB.Where("id = ?", task.DealID).First(&deal)
+		if result.Error != nil {
+			utils.BadRequestResponse(c, "Referenced deal does not exist")
+			return
+		}
+		
+		// Check deal ownership unless admin
+		if userRole != "admin" && deal.UserID != userID.(uint) {
+			utils.ForbiddenResponse(c, "You cannot assign a task to a deal that doesn't belong to you")
+			return
+		}
+	}
+	
+	// Save updated task
+	result = config.DB.Save(&task)
+	if result.Error != nil {
+		utils.InternalServerErrorResponse(c, "Failed to update task")
 		return
 	}
 
-	DB.Save(&task)
-	c.JSON(http.StatusOK, task)
+	utils.SuccessResponse(c, http.StatusOK, "Task updated successfully", task)
 }
 
 // DeleteTask deletes a task
 func DeleteTask(c *gin.Context) {
 	id := c.Param("id")
+	
+	// Get authenticated user ID and role from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+	
+	userRole, _ := c.Get("user_role")
+	
+	// Find task to delete
 	var task models.Task
-	result := DB.First(&task, id)
+	result := config.DB.First(&task, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+		utils.NotFoundResponse(c, "Task not found")
+		return
+	}
+	
+	// Check if user is authorized to delete this task
+	if userRole != "admin" && task.UserID != userID.(uint) {
+		utils.ForbiddenResponse(c, "You do not have permission to delete this task")
 		return
 	}
 
-	DB.Delete(&task)
-	c.JSON(http.StatusOK, gin.H{"message": "Task deleted successfully"})
+	// Delete the task
+	result = config.DB.Delete(&task)
+	if result.Error != nil {
+		utils.InternalServerErrorResponse(c, "Failed to delete task")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Task deleted successfully", nil)
 }
 
 // ToggleTaskCompletion toggles the completion status of a task
 func ToggleTaskCompletion(c *gin.Context) {
 	id := c.Param("id")
+	
+	// Get authenticated user ID and role from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+	
+	userRole, _ := c.Get("user_role")
+	
+	// Find task to toggle
 	var task models.Task
-	result := DB.First(&task, id)
+	result := config.DB.First(&task, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+		utils.NotFoundResponse(c, "Task not found")
+		return
+	}
+	
+	// Check if user is authorized to update this task
+	if userRole != "admin" && task.UserID != userID.(uint) {
+		utils.ForbiddenResponse(c, "You do not have permission to update this task")
 		return
 	}
 
+	// Toggle completion status
 	task.Completed = !task.Completed
-	DB.Save(&task)
-	c.JSON(http.StatusOK, task)
+	
+	// Save updated task
+	result = config.DB.Save(&task)
+	if result.Error != nil {
+		utils.InternalServerErrorResponse(c, "Failed to update task completion status")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Task completion status updated successfully", task)
 }

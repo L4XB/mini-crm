@@ -4,55 +4,105 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/deinname/mini-crm-backend/config"
 	"github.com/deinname/mini-crm-backend/models"
+	"github.com/deinname/mini-crm-backend/utils"
 	"github.com/gin-gonic/gin"
 )
 
 // GetUserSettings returns settings for a specific user
 func GetUserSettings(c *gin.Context) {
-	userID := c.Param("id")
+	// Get authenticated user ID and role from context
+	authUserID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+	
+	userRole, _ := c.Get("user_role")
+	
+	// Get requested user ID from URL parameter
+	requestedUserID := c.Param("id")
+	parsedRequestedUserID := uint(parseUint(requestedUserID))
+	
+	// Check authorization - users can only access their own settings unless admin
+	if userRole != "admin" && authUserID.(uint) != parsedRequestedUserID {
+		utils.ForbiddenResponse(c, "You do not have permission to access these settings")
+		return
+	}
+	
 	var settings models.Settings
 	
-	result := DB.Where("user_id = ?", userID).First(&settings)
+	result := config.DB.Where("user_id = ?", requestedUserID).First(&settings)
 	if result.Error != nil {
 		// If no settings found, create default settings
 		settings = models.Settings{
-			UserID:   uint(parseUint(userID)),
+			UserID:   parsedRequestedUserID,
 			Theme:    "light",
 			Language: "en",
 		}
-		DB.Create(&settings)
+		result = config.DB.Create(&settings)
+		if result.Error != nil {
+			utils.InternalServerErrorResponse(c, "Failed to create default settings")
+			return
+		}
 	}
 
-	c.JSON(http.StatusOK, settings)
+	utils.SuccessResponse(c, http.StatusOK, "Settings retrieved successfully", settings)
 }
 
 // UpdateSettings updates user settings
 func UpdateSettings(c *gin.Context) {
-	userID := c.Param("id")
+	// Get authenticated user ID and role from context
+	authUserID, exists := c.Get("user_id")
+	if !exists {
+		utils.InternalServerErrorResponse(c, "User ID not found in context")
+		return
+	}
+	
+	userRole, _ := c.Get("user_role")
+	
+	// Get requested user ID from URL parameter
+	requestedUserID := c.Param("id")
+	parsedRequestedUserID := uint(parseUint(requestedUserID))
+	
+	// Check authorization - users can only update their own settings unless admin
+	if userRole != "admin" && authUserID.(uint) != parsedRequestedUserID {
+		utils.ForbiddenResponse(c, "You do not have permission to update these settings")
+		return
+	}
+	
 	var settings models.Settings
 	
 	// Try to find existing settings
-	result := DB.Where("user_id = ?", userID).First(&settings)
+	result := config.DB.Where("user_id = ?", requestedUserID).First(&settings)
 	if result.Error != nil {
 		// If not found, initialize new settings
 		settings = models.Settings{
-			UserID: uint(parseUint(userID)),
+			UserID: parsedRequestedUserID,
 		}
 	}
 
+	// Store original userID to preserve ownership
+	originalUserID := settings.UserID
+
 	// Bind JSON body to settings
 	if err := c.ShouldBindJSON(&settings); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.BadRequestResponse(c, utils.FormatValidationErrors(err))
 		return
 	}
 
-	// Ensure UserID is not changed
-	settings.UserID = uint(parseUint(userID))
+	// Ensure UserID is not changed (preserve ownership)
+	settings.UserID = originalUserID
 
 	// Save settings (will update if exists, create if new)
-	DB.Save(&settings)
-	c.JSON(http.StatusOK, settings)
+	result = config.DB.Save(&settings)
+	if result.Error != nil {
+		utils.InternalServerErrorResponse(c, "Failed to save settings")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Settings updated successfully", settings)
 }
 
 // Helper function to parse uint from string
