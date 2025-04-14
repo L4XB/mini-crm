@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon,
@@ -11,98 +11,9 @@ import {
   TrashIcon,
   PencilIcon,
   DocumentTextIcon,
-  UserIcon,
   TagIcon,
 } from '@heroicons/react/24/outline';
-import Link from 'next/link';
-
-interface Note {
-  id: number;
-  title: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-  relatedTo?: {
-    type: 'contact' | 'deal' | 'task' | null;
-    id: number | null;
-    name: string;
-  };
-  tags: string[];
-  createdBy: string;
-}
-
-const MOCK_NOTES: Note[] = [
-  {
-    id: 1,
-    title: 'Meeting mit ABC GmbH',
-    content: 'Besprechung über Software-Implementierung. Kunde wünscht baldmöglichst ein Angebot für die zusätzlichen Module.',
-    createdAt: '2025-04-10T09:30:00Z',
-    updatedAt: '2025-04-10T10:15:00Z',
-    relatedTo: {
-      type: 'contact',
-      id: 1,
-      name: 'Max Mustermann (Musterfirma GmbH)'
-    },
-    tags: ['Meeting', 'Angebot'],
-    createdBy: 'Maria Schmidt'
-  },
-  {
-    id: 2,
-    title: 'Folge-Meeting für Wartungsvertrag',
-    content: 'XYZ AG ist interessiert an einem jährlichen Wartungsvertrag. Preisvorstellung: 5000€ pro Jahr.',
-    createdAt: '2025-04-11T14:00:00Z',
-    updatedAt: '2025-04-11T14:30:00Z',
-    relatedTo: {
-      type: 'deal',
-      id: 2,
-      name: 'Wartungsvertrag XYZ AG'
-    },
-    tags: ['Wartung', 'Vertrag'],
-    createdBy: 'Thomas Müller'
-  },
-  {
-    id: 3,
-    title: 'Anforderungen Cloud Migration',
-    content: 'EFG GmbH benötigt: Datenmigration, Schulung für 15 Mitarbeiter, 24/7 Support im ersten Monat.',
-    createdAt: '2025-04-12T11:45:00Z',
-    updatedAt: '2025-04-12T12:30:00Z',
-    relatedTo: {
-      type: 'deal',
-      id: 3,
-      name: 'Cloud Migration für EFG GmbH'
-    },
-    tags: ['Cloud', 'Anforderungen'],
-    createdBy: 'Anna Weber'
-  },
-  {
-    id: 4,
-    title: 'Vorbereitung Lösungs-Workshop',
-    content: 'Präsentation und Demo für Klinik Gesund vorbereiten. Besonderer Fokus auf Datenschutz und Benutzerschulung.',
-    createdAt: '2025-04-13T09:15:00Z',
-    updatedAt: '2025-04-13T09:45:00Z',
-    relatedTo: {
-      type: 'task',
-      id: 4,
-      name: 'Präsentation für Lösungs-Workshop vorbereiten'
-    },
-    tags: ['Workshop', 'Präsentation'],
-    createdBy: 'Daniel Fischer'
-  },
-  {
-    id: 5,
-    title: 'Lizenzierungsoptionen',
-    content: 'Recherche zu Lizenzmodellen für TechStart GmbH: Pro Benutzer vs. Pauschal, inkl. Kostenanalyse für beide Varianten.',
-    createdAt: '2025-04-09T15:30:00Z',
-    updatedAt: '2025-04-09T16:00:00Z',
-    relatedTo: {
-      type: 'contact',
-      id: 5,
-      name: 'Michael Klein (Finanzwesen AG)'
-    },
-    tags: ['Lizenzierung', 'Recherche'],
-    createdBy: 'Sabine Wolf'
-  },
-];
+import notesService, { Note } from '@/services/notesService';
 
 // Helper function to format dates
 const formatDate = (dateString: string) => {
@@ -365,13 +276,34 @@ const NoteModal = ({
 };
 
 export default function NotesPage() {
-  const [notes, setNotes] = useState<Note[]>(MOCK_NOTES);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [currentNote, setCurrentNote] = useState<Note | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
+  // Load notes from API on component mount
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        setLoading(true);
+        const fetchedNotes = await notesService.getAll();
+        setNotes(fetchedNotes);
+        setError(null);
+      } catch (err) {
+        console.error('Fehler beim Laden der Notizen:', err);
+        setError('Notizen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchNotes();
+  }, []);
+
   // Get all unique tags from notes
   const allTags = Array.from(new Set(notes.flatMap(note => note.tags)));
   
@@ -394,9 +326,15 @@ export default function NotesPage() {
     }
   };
   
-  const handleDeleteNote = (id: number) => {
+  const handleDeleteNote = async (id: number) => {
     if (window.confirm('Sind Sie sicher, dass Sie diese Notiz löschen möchten?')) {
-      setNotes(notes.filter(note => note.id !== id));
+      try {
+        await notesService.delete(id);
+        setNotes(notes.filter(note => note.id !== id));
+      } catch (err) {
+        console.error('Fehler beim Löschen der Notiz:', err);
+        alert('Die Notiz konnte nicht gelöscht werden. Bitte versuchen Sie es später erneut.');
+      }
     }
   };
   
@@ -405,31 +343,61 @@ export default function NotesPage() {
     setNoteModalOpen(true);
   };
   
-  const handleSaveNote = (noteData: Partial<Note>) => {
-    if (noteData.id) {
-      // Update existing note
-      setNotes(notes.map(note => 
-        note.id === noteData.id ? { ...note, ...noteData } : note
-      ));
-    } else {
-      // Create new note
-      const newNote: Note = {
-        id: Math.max(0, ...notes.map(n => n.id)) + 1,
-        title: noteData.title || '',
-        content: noteData.content || '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        tags: noteData.tags || [],
-        createdBy: 'Aktueller Benutzer', // This would come from auth context in a real app
-      };
-      
-      setNotes([newNote, ...notes]);
+  const handleSaveNote = async (noteData: Partial<Note>) => {
+    try {
+      if (noteData.id) {
+        // Update existing note
+        const updatedNote = await notesService.update(noteData.id, noteData);
+        setNotes(notes.map(note => 
+          note.id === noteData.id ? updatedNote : note
+        ));
+      } else {
+        // Create new note
+        const newNoteData = {
+          title: noteData.title || '',
+          content: noteData.content || '',
+          tags: noteData.tags || [],
+          // In einer echten App würden wir relatedTo hier setzen können
+        };
+        
+        const newNote = await notesService.create(newNoteData);
+        setNotes([newNote, ...notes]);
+      }
+    } catch (err) {
+      console.error('Fehler beim Speichern der Notiz:', err);
+      alert('Die Notiz konnte nicht gespeichert werden. Bitte versuchen Sie es später erneut.');
     }
   };
   
   const handleExportNotes = () => {
-    // In a real implementation, this would generate a CSV/PDF file
-    alert('Export-Funktion wird implementiert');
+    try {
+      // Erstelle CSV-Inhalt
+      let csvContent = 'data:text/csv;charset=utf-8,';
+      csvContent += 'ID,Titel,Inhalt,Erstellungsdatum,Tags\n';
+      
+      filteredNotes.forEach(note => {
+        const formattedTags = note.tags.join(';');
+        const formattedDate = new Date(note.createdAt).toLocaleDateString('de-DE');
+        const escapedContent = `"${note.content.replace(/"/g, '""')}"`;
+        const escapedTitle = `"${note.title.replace(/"/g, '""')}"`;
+        
+        csvContent += `${note.id},${escapedTitle},${escapedContent},${formattedDate},${formattedTags}\n`;
+      });
+      
+      // Erstelle Download-Link
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `Notizen_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      
+      // Klicke auf den Link, um den Download zu starten
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Fehler beim Exportieren der Notizen:', err);
+      alert('Die Notizen konnten nicht exportiert werden. Bitte versuchen Sie es später erneut.');
+    }
   };
   
   return (
@@ -528,7 +496,22 @@ export default function NotesPage() {
         </div>
         
         <div className="p-4">
-          {filteredNotes.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-10">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Notizen werden geladen...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-10 text-red-600">
+              <p>{error}</p>
+              <button 
+                className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                onClick={() => window.location.reload()}
+              >
+                Erneut versuchen
+              </button>
+            </div>
+          ) : filteredNotes.length === 0 ? (
             <div className="text-center py-10">
               <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">Keine Notizen gefunden</h3>

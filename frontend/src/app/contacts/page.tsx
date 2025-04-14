@@ -133,7 +133,51 @@ export default function ContactsPage() {
   };
 
   const handleExportContacts = () => {
-    alert('CSV-Export-Funktion wird implementiert');
+    try {
+      // CSV-Header erstellen
+      let csvContent = 'data:text/csv;charset=utf-8,';
+      csvContent += 'ID,Name,E-Mail,Telefon,Position,Unternehmen,Kontaktphase,Notizen,Tags\n';
+      
+      // Filtere die Kontakte basierend auf den aktuellen Filterkriterien
+      const contactsToExport = filteredContacts;
+      
+      // Füge die Daten jedes Kontakts hinzu
+      contactsToExport.forEach((contact) => {
+        // Bereite die Daten für CSV vor (handle Kommas, Anführungszeichen usw.)
+        const escapedNotes = contact.notes ? `"${contact.notes.replace(/"/g, '""')}"` : '""';  // Escape Anführungszeichen
+        const tags = contact.tags ? contact.tags.join(';') : '';  // Tags als Semikolon-getrennte Liste
+        const contactStageLabel = contactStages.find(stage => stage.value === contact.contactStage)?.label || contact.contactStage;
+        
+        // Füge die Kontaktzeile zum CSV hinzu
+        csvContent += [
+          contact.id,
+          `"${contact.name}"`,
+          `"${contact.email}"`,
+          `"${contact.phone}"`,
+          `"${contact.position}"`,
+          `"${contact.company}"`,
+          `"${contactStageLabel}"`,
+          escapedNotes,
+          `"${tags}"`
+        ].join(',') + '\n';
+      });
+      
+      // Erstelle einen Download-Link
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `Kontakte_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      
+      // Klicke auf den Link, um den Download zu starten
+      link.click();
+      
+      // Entferne den Link wieder
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Fehler beim Exportieren der Kontakte:', err);
+      setError('Kontakte konnten nicht exportiert werden. Bitte versuchen Sie es später erneut.');
+    }
   };
 
   const filteredContacts = contacts.filter(contact => {
@@ -232,6 +276,8 @@ export default function ContactsPage() {
               type="button"
               className="ml-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               onClick={handleExportContacts}
+              disabled={filteredContacts.length === 0}
+              title={filteredContacts.length === 0 ? 'Keine Kontakte zum Exportieren' : 'Exportieren als CSV'}
             >
               <ArrowDownTrayIcon className="mr-2 h-5 w-5 text-gray-500" />
               Exportieren

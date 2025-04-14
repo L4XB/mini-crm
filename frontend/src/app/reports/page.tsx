@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ArrowDownTrayIcon,
   ChartBarIcon,
@@ -12,60 +12,11 @@ import {
   ArrowPathIcon,
   CheckCircleIcon,
   XCircleIcon,
+  ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
+import reportsService, { ReportData } from '@/services/reportsService';
 
-// Mock report data
-const MOCK_REPORT_DATA = {
-  salesOverview: {
-    totalDeals: 125,
-    totalValue: 754230,
-    avgDealSize: 6034,
-    wonDeals: 78,
-    lostDeals: 32,
-    openDeals: 15,
-    conversionRate: 71,
-  },
-  salesByMonth: [
-    { month: 'Jan', value: 52400 },
-    { month: 'Feb', value: 47900 },
-    { month: 'Mär', value: 63200 },
-    { month: 'Apr', value: 58700 },
-    { month: 'Mai', value: 71500 },
-    { month: 'Jun', value: 68300 },
-    { month: 'Jul', value: 74600 },
-    { month: 'Aug', value: 69800 },
-    { month: 'Sep', value: 82100 },
-    { month: 'Okt', value: 79500 },
-    { month: 'Nov', value: 85600 },
-    { month: 'Dez', value: 0 }, // Current month, no data yet
-  ],
-  topPerformers: [
-    { name: 'Maria Schmidt', deals: 28, value: 167500 },
-    { name: 'Thomas Müller', deals: 23, value: 145800 },
-    { name: 'Anna Weber', deals: 18, value: 132400 },
-    { name: 'Daniel Fischer', deals: 15, value: 98700 },
-    { name: 'Sabine Wolf', deals: 12, value: 87600 },
-  ],
-  leadSources: [
-    { source: 'Website', count: 45, percentage: 36 },
-    { source: 'Empfehlung', count: 32, percentage: 25.6 },
-    { source: 'Messe', count: 18, percentage: 14.4 },
-    { source: 'Kaltakquise', count: 16, percentage: 12.8 },
-    { source: 'Social Media', count: 14, percentage: 11.2 },
-  ],
-  dealsByStage: [
-    { stage: 'Bedarfsanalyse', count: 22, value: 132000 },
-    { stage: 'Angebot', count: 18, value: 108000 },
-    { stage: 'Verhandlung', count: 15, value: 90000 },
-    { stage: 'Abschluss', count: 9, value: 54000 },
-  ],
-  activityMetrics: {
-    callsMade: 326,
-    emailsSent: 548,
-    meetingsScheduled: 87,
-    tasksCompleted: 203,
-  },
-};
+
 
 // Helper function to format currency
 const formatCurrency = (amount: number) => {
@@ -119,7 +70,11 @@ const BarChart = ({ data, title }: { data: any[]; title: string }) => {
 };
 
 // Table component
-const Table = ({ data, columns, title }: { data: any[]; columns: { key: string; label: string; format?: (value: any) => string }[]; title: string }) => (
+const Table = ({ data, columns, title }: { 
+  data: any[]; 
+  columns: { key: string; label: string; format?: (value: any) => string }[]; 
+  title: string 
+}) => (
   <div className="bg-white rounded-lg shadow overflow-hidden">
     <div className="px-6 py-4 border-b border-gray-200">
       <h3 className="text-lg font-medium text-gray-900">{title}</h3>
@@ -240,17 +195,60 @@ export default function ReportsPage() {
   const [dateRange, setDateRange] = useState('Dieser Monat');
   const [reportType, setReportType] = useState('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  const handleRefreshData = () => {
-    setIsRefreshing(true);
-    // Simulate API call
-    setTimeout(() => {
+  // fetchReportData mit useCallback wrappen, damit es nicht bei jedem Rendering neu erstellt wird
+  const fetchReportData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setIsRefreshing(true);
+      const data = await reportsService.getReportData(reportType, dateRange);
+      setReportData(data);
+      setError(null);
+    } catch (err) {
+      console.error('Fehler beim Laden der Berichtsdaten:', err);
+      setError('Die Berichtsdaten konnten nicht geladen werden. Bitte versuchen Sie es später erneut.');
+    } finally {
+      setLoading(false);
       setIsRefreshing(false);
-    }, 1500);
+    }
+  }, [dateRange, reportType]); // Abhängigkeiten für useCallback
+
+  // Daten beim Laden der Komponente und bei Änderung von fetchReportData abrufen
+  useEffect(() => {
+    fetchReportData();
+  }, [fetchReportData]); // fetchReportData ist nun eine stabile Referenz dank useCallback
+
+  const handleRefreshData = () => {
+    fetchReportData();
   };
   
-  const handleExportReport = () => {
-    alert('Export-Funktion wird implementiert');
+  const handleExportReport = async () => {
+    try {
+      setIsRefreshing(true);
+      const blob = await reportsService.exportReport(reportType, dateRange, 'csv');
+      
+      // Erstelle einen Download-Link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Bericht_${reportType}_${dateRange.replace(' ', '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      
+      // Klicke auf den Link, um den Download zu starten
+      link.click();
+      
+      // Bereinige
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Fehler beim Exportieren des Berichts:', err);
+      alert('Der Bericht konnte nicht exportiert werden. Bitte versuchen Sie es später erneut.');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
   
   return (
@@ -295,8 +293,29 @@ export default function ReportsPage() {
           </div>
         </div>
         
-        {/* Overview Report */}
-        {reportType === 'overview' && (
+        {/* Lade-Zustand oder Fehler anzeigen */}
+        {loading && !isRefreshing ? (
+          <div className="p-6 text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Berichtsdaten werden geladen...</p>
+          </div>
+        ) : error ? (
+          <div className="p-6 text-center py-12">
+            <ExclamationCircleIcon className="mx-auto h-12 w-12 text-red-500" />
+            <h3 className="mt-2 text-lg font-medium text-gray-900">Fehler beim Laden der Daten</h3>
+            <p className="mt-1 text-sm text-gray-500">{error}</p>
+            <div className="mt-6">
+              <button
+                type="button"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={handleRefreshData}
+              >
+                <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" />
+                Erneut versuchen
+              </button>
+            </div>
+          </div>
+        ) : reportData && reportType === 'overview' && (
           <div className="p-6">
             <div className="mb-6">
               <h2 className="text-lg font-medium text-gray-900">Vertriebsübersicht</h2>
@@ -306,37 +325,37 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               <MetricCard 
                 title="Gesamtumsatz" 
-                value={formatCurrency(MOCK_REPORT_DATA.salesOverview.totalValue)} 
+                value={formatCurrency(reportData.salesOverview.totalValue)} 
                 icon={<CurrencyEuroIcon className="h-6 w-6 text-white" />}
                 color="bg-green-500"
               />
               <MetricCard 
                 title="Ø Deal-Größe" 
-                value={formatCurrency(MOCK_REPORT_DATA.salesOverview.avgDealSize)} 
+                value={formatCurrency(reportData.salesOverview.avgDealSize)} 
                 icon={<ChartBarIcon className="h-6 w-6 text-white" />}
                 color="bg-blue-500"
               />
               <MetricCard 
                 title="Abschlussrate" 
-                value={`${MOCK_REPORT_DATA.salesOverview.conversionRate}%`} 
+                value={`${reportData.salesOverview.conversionRate}%`} 
                 icon={<CheckCircleIcon className="h-6 w-6 text-white" />}
                 color="bg-indigo-500"
               />
               <MetricCard 
                 title="Anzahl Deals" 
-                value={MOCK_REPORT_DATA.salesOverview.totalDeals} 
+                value={reportData.salesOverview.totalDeals} 
                 icon={<BriefcaseIcon className="h-6 w-6 text-white" />}
                 color="bg-yellow-500"
               />
             </div>
             
             <div className="mb-6">
-              <BarChart data={MOCK_REPORT_DATA.salesByMonth} title="Umsatz nach Monat" />
+              <BarChart data={reportData.salesByMonth} title="Umsatz nach Monat" />
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Table 
-                data={MOCK_REPORT_DATA.topPerformers} 
+                data={reportData.topPerformers} 
                 columns={[
                   { key: 'name', label: 'Mitarbeiter' },
                   { key: 'deals', label: 'Anzahl Deals' },
@@ -344,13 +363,13 @@ export default function ReportsPage() {
                 ]}
                 title="Top Performer"
               />
-              <PieChart data={MOCK_REPORT_DATA.leadSources} title="Lead-Quellen" />
+              <PieChart data={reportData.leadSources} title="Lead-Quellen" />
             </div>
           </div>
         )}
         
         {/* Sales Report */}
-        {reportType === 'sales' && (
+        {reportData && reportType === 'sales' && (
           <div className="p-6">
             <div className="mb-6">
               <h2 className="text-lg font-medium text-gray-900">Vertriebsbericht</h2>
@@ -360,19 +379,19 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <MetricCard 
                 title="Gewonnene Deals" 
-                value={MOCK_REPORT_DATA.salesOverview.wonDeals} 
+                value={reportData.salesOverview.wonDeals} 
                 icon={<CheckCircleIcon className="h-6 w-6 text-white" />}
                 color="bg-green-500"
               />
               <MetricCard 
                 title="Verlorene Deals" 
-                value={MOCK_REPORT_DATA.salesOverview.lostDeals} 
+                value={reportData.salesOverview.lostDeals} 
                 icon={<XCircleIcon className="h-6 w-6 text-white" />}
                 color="bg-red-500"
               />
               <MetricCard 
                 title="Offene Deals" 
-                value={MOCK_REPORT_DATA.salesOverview.openDeals} 
+                value={reportData.salesOverview.openDeals} 
                 icon={<ClipboardDocumentListIcon className="h-6 w-6 text-white" />}
                 color="bg-yellow-500"
               />
@@ -380,7 +399,7 @@ export default function ReportsPage() {
             
             <div className="mb-6">
               <Table 
-                data={MOCK_REPORT_DATA.dealsByStage} 
+                data={reportData.dealsByStage} 
                 columns={[
                   { key: 'stage', label: 'Phase' },
                   { key: 'count', label: 'Anzahl' },
@@ -393,7 +412,7 @@ export default function ReportsPage() {
         )}
         
         {/* Activity Report */}
-        {reportType === 'activity' && (
+        {reportData && reportType === 'activity' && (
           <div className="p-6">
             <div className="mb-6">
               <h2 className="text-lg font-medium text-gray-900">Aktivitätsbericht</h2>
@@ -403,25 +422,25 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               <MetricCard 
                 title="Anrufe getätigt" 
-                value={MOCK_REPORT_DATA.activityMetrics.callsMade} 
+                value={reportData.activityMetrics.callsMade} 
                 icon={<UserGroupIcon className="h-6 w-6 text-white" />}
                 color="bg-blue-500"
               />
               <MetricCard 
                 title="E-Mails gesendet" 
-                value={MOCK_REPORT_DATA.activityMetrics.emailsSent} 
+                value={reportData.activityMetrics.emailsSent} 
                 icon={<UserGroupIcon className="h-6 w-6 text-white" />}
                 color="bg-indigo-500"
               />
               <MetricCard 
                 title="Meetings geplant" 
-                value={MOCK_REPORT_DATA.activityMetrics.meetingsScheduled} 
+                value={reportData.activityMetrics.meetingsScheduled} 
                 icon={<CalendarIcon className="h-6 w-6 text-white" />}
                 color="bg-purple-500"
               />
               <MetricCard 
                 title="Aufgaben erledigt" 
-                value={MOCK_REPORT_DATA.activityMetrics.tasksCompleted} 
+                value={reportData.activityMetrics.tasksCompleted} 
                 icon={<ClipboardDocumentListIcon className="h-6 w-6 text-white" />}
                 color="bg-green-500"
               />
@@ -430,7 +449,7 @@ export default function ReportsPage() {
         )}
         
         {/* Additional report types would be implemented similarly */}
-        {(reportType === 'leads' || reportType === 'performance') && (
+        {reportData && (reportType === 'leads' || reportType === 'performance') && (
           <div className="p-6 text-center py-12">
             <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-lg font-medium text-gray-900">Bericht in Entwicklung</h3>
