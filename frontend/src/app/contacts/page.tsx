@@ -1,0 +1,296 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { DashboardLayout } from '@/components/layouts';
+import { Button } from '@/components/ui/Button';
+import { contactsService } from '@/services/api';
+import { 
+  PlusIcon, 
+  PencilIcon, 
+  TrashIcon,
+  MagnifyingGlassIcon,
+  ArrowDownTrayIcon,
+  FunnelIcon,
+  ChevronDownIcon,
+  PhoneIcon,
+  EnvelopeIcon
+} from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import { getInitials, stringToColor } from '@/lib/utils';
+
+interface Contact {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  position: string;
+  company: string;
+  contactStage: string;
+}
+
+export default function ContactsPage() {
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedStage, setSelectedStage] = useState<string>('all');
+  const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
+
+  // Mock contact stages
+  const contactStages = [
+    { value: 'all', label: 'Alle Phasen' },
+    { value: 'lead', label: 'Lead' },
+    { value: 'prospect', label: 'Interessent' },
+    { value: 'customer', label: 'Kunde' },
+    { value: 'inactive', label: 'Inaktiv' },
+  ];
+
+  useEffect(() => {
+    fetchContacts();
+  }, []);
+
+  const fetchContacts = async () => {
+    try {
+      setIsLoading(true);
+      const response = await contactsService.getAll();
+      setContacts(response);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching contacts:', err);
+      setError('Fehler beim Laden der Kontakte. Bitte versuchen Sie es später erneut.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteContact = async (id: number) => {
+    if (window.confirm('Sind Sie sicher, dass Sie diesen Kontakt löschen möchten?')) {
+      try {
+        await contactsService.delete(id);
+        setContacts(contacts.filter(contact => contact.id !== id));
+      } catch (err) {
+        console.error('Error deleting contact:', err);
+        setError('Fehler beim Löschen des Kontakts.');
+      }
+    }
+  };
+
+  const filteredContacts = contacts.filter(contact => {
+    const matchesSearch = 
+      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.position.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStage = selectedStage === 'all' || contact.contactStage === selectedStage;
+    
+    return matchesSearch && matchesStage;
+  });
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="sm:flex sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Kontakte</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Verwalten Sie Ihre Geschäftskontakte und deren Informationen.
+            </p>
+          </div>
+          <div className="mt-4 sm:mt-0">
+            <Link href="/contacts/new">
+              <Button className="inline-flex items-center">
+                <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                Neuer Kontakt
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="flex">
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-gray-200 bg-gray-50 sm:flex sm:items-center sm:justify-between">
+            <div className="relative max-w-xs w-full">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              </div>
+              <input
+                type="text"
+                placeholder="Kontakte durchsuchen..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div className="mt-3 flex sm:mt-0 sm:ml-4">
+              <div className="relative inline-block text-left">
+                <Button
+                  variant="outline"
+                  className="inline-flex items-center"
+                  onClick={() => setShowFilterMenu(!showFilterMenu)}
+                >
+                  <FunnelIcon className="mr-2 h-5 w-5 text-gray-500" aria-hidden="true" />
+                  Filter
+                  <ChevronDownIcon className="ml-2 h-5 w-5 text-gray-500" aria-hidden="true" />
+                </Button>
+                
+                {showFilterMenu && (
+                  <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <div className="px-4 py-2 text-sm text-gray-700 font-medium border-b border-gray-100">
+                        Phase filtern
+                      </div>
+                      {contactStages.map((stage) => (
+                        <button
+                          key={stage.value}
+                          className={`${
+                            selectedStage === stage.value ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                          } block px-4 py-2 text-sm w-full text-left hover:bg-gray-50`}
+                          onClick={() => {
+                            setSelectedStage(stage.value);
+                            setShowFilterMenu(false);
+                          }}
+                        >
+                          {stage.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <Button
+                variant="outline"
+                className="ml-3 inline-flex items-center"
+                onClick={() => {
+                  // CSV export logic would go here
+                  alert('CSV-Export-Funktion wird implementiert');
+                }}
+              >
+                <ArrowDownTrayIcon className="mr-2 h-5 w-5 text-gray-500" />
+                Exportieren
+              </Button>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="p-10 flex justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+          ) : filteredContacts.length === 0 ? (
+            <div className="p-10 text-center text-gray-500">
+              {searchTerm || selectedStage !== 'all'
+                ? 'Keine Kontakte entsprechen Ihren Filterkriterien.'
+                : 'Keine Kontakte vorhanden. Erstellen Sie Ihren ersten Kontakt!'}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Position / Unternehmen
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Kontakt
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phase
+                    </th>
+                    <th scope="col" className="relative px-6 py-3">
+                      <span className="sr-only">Aktionen</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredContacts.map((contact) => (
+                    <tr key={contact.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full" 
+                               style={{ backgroundColor: stringToColor(contact.name) }}>
+                            <span className="text-white font-medium">{getInitials(contact.name)}</span>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              <Link href={`/contacts/${contact.id}`} className="hover:text-indigo-600">
+                                {contact.name}
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{contact.position}</div>
+                        <div className="text-sm text-gray-500">{contact.company}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900 mb-1">
+                          <EnvelopeIcon className="mr-2 h-4 w-4 text-gray-400" />
+                          <a href={`mailto:${contact.email}`} className="hover:text-indigo-600">
+                            {contact.email}
+                          </a>
+                        </div>
+                        {contact.phone && (
+                          <div className="flex items-center text-sm text-gray-500">
+                            <PhoneIcon className="mr-2 h-4 w-4 text-gray-400" />
+                            <a href={`tel:${contact.phone}`} className="hover:text-indigo-600">
+                              {contact.phone}
+                            </a>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                          ${contact.contactStage === 'lead' ? 'bg-blue-100 text-blue-800' : 
+                            contact.contactStage === 'prospect' ? 'bg-yellow-100 text-yellow-800' : 
+                            contact.contactStage === 'customer' ? 'bg-green-100 text-green-800' : 
+                            'bg-gray-100 text-gray-800'}`}>
+                          {contactStages.find(stage => stage.value === contact.contactStage)?.label || 'Unbekannt'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-2">
+                          <Link href={`/contacts/${contact.id}/edit`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-400 hover:text-indigo-600"
+                            >
+                              <PencilIcon className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-gray-400 hover:text-red-600"
+                            onClick={() => handleDeleteContact(contact.id)}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}

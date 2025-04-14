@@ -18,16 +18,37 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=mini_crm
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev_secret_key}
       - JWT_EXPIRATION_HOURS=24
       - PORT=8081
       - ENV=production
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
       - LOG_LEVEL=info
     networks:
       - mini_crm_network
     volumes:
       - api_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mini_crm_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:8081
+    depends_on:
+      - api
+    networks:
+      - mini_crm_network
 
   # PostgreSQL Database
   postgres:
@@ -45,6 +66,11 @@ services:
     networks:
       - mini_crm_network
     command: postgres -c 'max_connections=200'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   mini_crm_network:
