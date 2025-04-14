@@ -1,10 +1,23 @@
 name: Build and Deploy Mini CRM
 
+# Workflow manuell auslösen, nicht bei jedem Push
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment-Umgebung'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      deploy:
+        description: 'Deploy nach Build?'
+        required: true
+        default: false
+        type: boolean
 
 jobs:
   build:

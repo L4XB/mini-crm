@@ -1,6 +1,6 @@
 # Mini CRM Backend API
 
-Ein umfassendes Backend-System für eine Customer Relationship Management (CRM) Anwendung, entwickelt mit Go, dem Gin Framework und GORM für Datenbankinteraktionen.
+Ein umfassendes Backend-System für eine Customer Relationship Management (CRM) Anwendung, entwickelt mit Go, dem Gin Framework und GORM für Datenbankinteraktionen. Dieses System unterstützt sowohl Web- (React) als auch Mobile-Clients (Flutter).
 
 ## Technologien
 
@@ -19,6 +19,15 @@ Ein umfassendes Backend-System für eine Customer Relationship Management (CRM) 
 - Rollenbasierte Zugriffskontrolle (admin/user)
 - CRUD-Operationen für alle Modelle
 - Umfassende Fehlerbehandlung
+- Refresh-Token-Mechanismus
+- Mobile-spezifische Authentifizierung
+- API-Key-Validierung für externe Anwendungen
+- Rate Limiting und Schutz vor Brute-Force-Angriffen
+- Strukturiertes Logging mit Anfrageverfolgung
+- Prometheus-Metriken für Monitoring (nur für Admins)
+- Health-Check-Endpunkte für Container-Orchestrierung
+- Umfassende Swagger-Dokumentation mit interaktivem API-Testing
+- Testmodus für UI-Entwicklung
 - Standardisierte API-Antworten
 - Logging für alle Anfragen und Anwendungsaktivitäten
 - Schutz vor Brute-Force und DoS-Angriffen 
@@ -186,6 +195,75 @@ Das System verwendet strukturiertes Logging mit verschiedenen Log-Ebenen:
 - **error**: Fehler, die die Anwendungsfunktionalität beeinträchtigen
 
 Die Log-Ebene kann über die Umgebungsvariable `LOG_LEVEL` konfiguriert werden.
+
+## API-Dokumentation mit Swagger
+
+Das Mini CRM verfügt über eine umfassende Swagger-Dokumentation, die die Entwicklung und Integration von Frontends erheblich erleichtert:
+
+### Swagger-Dokumentation aufrufen
+
+1. Starten Sie den Server im Entwicklungsmodus mit einem der folgenden Befehle:
+   ```bash
+   make run
+   # oder mit Hot-Reload:
+   make run-dev
+   ```
+
+2. Öffnen Sie die Swagger-UI in Ihrem Browser unter:
+   ```
+   http://localhost:8081/swagger/index.html
+   ```
+
+3. In der Swagger-UI können Sie:
+   - Alle verfügbaren API-Endpunkte einsehen
+   - Request/Response-Modelle und Parameter im Detail betrachten
+   - APIs direkt im Browser testen
+   - API-Token für authentifizierte Anfragen verwenden
+   - Die Dokumentation als JSON oder YAML herunterladen
+
+### Hinweise zur Swagger-Nutzung
+
+- In der Produktionsumgebung ist Swagger standardmäßig deaktiviert
+- Mit der Umgebungsvariable `ENABLE_SWAGGER=true` kann Swagger auch in Produktion aktiviert werden
+- Die Definition kann in `/docs/swagger.json` oder `/docs/swagger.yaml` eingesehen werden
+
+## UI-Entwicklungsmodus
+
+Für die parallele Entwicklung von Frontend und Backend bietet das System einen speziellen Testmodus:
+
+### Testmodus aktivieren
+
+1. Stellen Sie sicher, dass die `.env.development`-Datei im Backend-Verzeichnis verwendet wird
+
+2. Testmodus-Konfiguration:
+   ```
+   # UI-Test-Modus aktivieren
+   UI_TEST_MODE=true
+   
+   # Vordefinierter Testbenutzer
+   UI_TEST_USER=admin@example.com
+   UI_TEST_PASSWORD=test1234
+   
+   # Optional: Authentifizierung umgehen (NUR für Entwicklung!)
+   DISABLE_AUTH_FOR_TESTS=false
+   
+   # Testdaten generieren
+   SEED_TEST_DATA=true
+   ```
+
+3. Starten Sie das Backend im Entwicklungsmodus:
+   ```bash
+   make run-dev
+   ```
+
+### Testmodus-Features
+
+- **Automatisierte Authentifizierung**: Bei aktiviertem `DISABLE_AUTH_FOR_TESTS` werden alle Anfragen automatisch authentifiziert
+- **Test-Header**: Im Testmodus wird ein `X-Test-Mode: enabled` Header zurückgesendet
+- **Erweiterte CORS**: Alle lokalen Entwicklungsserver werden automatisch zur CORS-Liste hinzugefügt
+- **Testdaten**: Bei aktiviertem `SEED_TEST_DATA` werden automatisch Beispieldaten erzeugt
+
+> **WICHTIG**: Der Testmodus sollte niemals in Produktionsumgebungen aktiviert werden!
 
 ## Entwicklung und Beitrag
 

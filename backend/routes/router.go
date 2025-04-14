@@ -22,6 +22,9 @@ func SetupRouter() *gin.Engine {
 	// Recovery middleware für Panic-Handling
 	r.Use(gin.Recovery())
 	
+	// Test-Modus für UI-Entwicklung (muss vor anderen Middlewares geladen werden)
+	r.Use(middleware.TestModeMiddleware())
+	
 	// Logging-Middleware hinzufügen
 	r.Use(middleware.LoggerMiddleware())
 	
@@ -70,15 +73,17 @@ func SetupRouter() *gin.Engine {
 		c.Status(http.StatusOK)
 	})
 	
-	// Prometheus Metrics endpoint (protected in production)
+	// Prometheus Metrics endpoint (nur für Admins zugänglich)
 	if os.Getenv("ENV") == "production" {
-		// In Produktion mit Basic Auth schützen
-		r.GET("/metrics", gin.BasicAuth(gin.Accounts{
-			os.Getenv("METRICS_USER"): os.Getenv("METRICS_PASSWORD"),
-		}), gin.WrapH(promhttp.Handler()))
+		// In Produktion mit Admin-Token schützen
+		r.GET("/metrics", middleware.AdminAuthMiddleware(), gin.WrapH(promhttp.Handler()))
 	} else {
-		// In Entwicklung offen lassen
-		r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+		// In Entwicklung mit Admin-Token schützen - kann für Tests ausgeschaltet werden
+		if os.Getenv("OPEN_METRICS") == "true" {
+			r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+		} else {
+			r.GET("/metrics", middleware.AdminAuthMiddleware(), gin.WrapH(promhttp.Handler()))
+		}
 	}
 	
 	// Swagger-Dokumentation (nur in Entwicklungsumgebung oder auf Anfrage verfügbar)

@@ -4,6 +4,12 @@ import (
 	"gorm.io/gorm"
 )
 
+// Benutzerrollen-Konstanten
+const (
+	UserRole  = "user"
+	AdminRole = "admin"
+)
+
 type User struct {
 	gorm.Model
 	Username string   `json:"username" gorm:"unique;not null"`
