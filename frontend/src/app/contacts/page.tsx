@@ -1,40 +1,94 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/layouts';
-import { Button } from '@/components/ui/Button';
-import { contactsService } from '@/services/api';
+import React, { useState } from 'react';
 import { 
   PlusIcon, 
-  PencilIcon, 
-  TrashIcon,
   MagnifyingGlassIcon,
   ArrowDownTrayIcon,
   FunnelIcon,
-  ChevronDownIcon,
-  PhoneIcon,
-  EnvelopeIcon
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { getInitials, stringToColor } from '@/lib/utils';
+import { ContactList } from '@/components/contacts/ContactList';
+import { ContactFilters } from '@/components/contacts/ContactFilters';
+import { Contact } from '@/types/contact';
 
-interface Contact {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  position: string;
-  company: string;
-  contactStage: string;
-}
+// Mock contact data
+const MOCK_CONTACTS: Contact[] = [
+  {
+    id: 1,
+    name: 'Max Mustermann',
+    email: 'max.mustermann@example.com',
+    phone: '+49 123 4567890',
+    position: 'Geschäftsführer',
+    company: 'Musterfirma GmbH',
+    contactStage: 'customer',
+    notes: 'Langjähriger Kunde mit Interesse an neuen Produkten.',
+    tags: ['VIP', 'Langzeit']
+  },
+  {
+    id: 2,
+    name: 'Anna Schmidt',
+    email: 'anna.schmidt@example.com',
+    phone: '+49 987 6543210',
+    position: 'Marketing Direktorin',
+    company: 'Marketing AG',
+    contactStage: 'lead',
+    notes: 'Interesse an Marketing-Automation geäußert.',
+    tags: ['Neu', 'Marketing']
+  },
+  {
+    id: 3,
+    name: 'Thomas Weber',
+    email: 'thomas.weber@example.com',
+    phone: '+49 234 5678901',
+    position: 'IT-Leiter',
+    company: 'Tech Solutions GmbH',
+    contactStage: 'prospect',
+    notes: 'Braucht ein Angebot für IT-Infrastruktur.',
+    tags: ['IT', 'Dringend']
+  },
+  {
+    id: 4,
+    name: 'Laura Müller',
+    email: 'laura.mueller@example.com',
+    phone: '+49 345 6789012',
+    position: 'Vertriebsleiterin',
+    company: 'Vertrieb & Co KG',
+    contactStage: 'customer',
+    notes: 'Monatlicher Check-in vereinbart.',
+    tags: ['Vertrieb', 'Wichtig']
+  },
+  {
+    id: 5,
+    name: 'Michael Klein',
+    email: 'michael.klein@example.com',
+    phone: '+49 456 7890123',
+    position: 'Finanzdirektor',
+    company: 'Finanzwesen AG',
+    contactStage: 'inactive',
+    notes: 'Seit 3 Monaten kein Kontakt.',
+    tags: ['Finanzen']
+  },
+  {
+    id: 6,
+    name: 'Sophie Wagner',
+    email: 'sophie.wagner@example.com',
+    phone: '+49 567 8901234',
+    position: 'HR Managerin',
+    company: 'Personal GmbH',
+    contactStage: 'prospect',
+    notes: 'Interesse an HR-Management-Systemen.',
+    tags: ['HR', 'Software']
+  },
+];
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
-  const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
 
   // Mock contact stages
   const contactStages = [
@@ -45,34 +99,19 @@ export default function ContactsPage() {
     { value: 'inactive', label: 'Inaktiv' },
   ];
 
-  useEffect(() => {
-    fetchContacts();
-  }, []);
-
-  const fetchContacts = async () => {
-    try {
-      setIsLoading(true);
-      const response = await contactsService.getAll();
-      setContacts(response);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching contacts:', err);
-      setError('Fehler beim Laden der Kontakte. Bitte versuchen Sie es später erneut.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteContact = async (id: number) => {
+  const handleDeleteContact = (id: number) => {
     if (window.confirm('Sind Sie sicher, dass Sie diesen Kontakt löschen möchten?')) {
       try {
-        await contactsService.delete(id);
         setContacts(contacts.filter(contact => contact.id !== id));
       } catch (err) {
         console.error('Error deleting contact:', err);
         setError('Fehler beim Löschen des Kontakts.');
       }
     }
+  };
+  
+  const handleExportContacts = () => {
+    alert('CSV-Export-Funktion wird implementiert');
   };
 
   const filteredContacts = contacts.filter(contact => {
@@ -88,100 +127,43 @@ export default function ContactsPage() {
   });
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="sm:flex sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Kontakte</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Verwalten Sie Ihre Geschäftskontakte und deren Informationen.
-            </p>
-          </div>
-          <div className="mt-4 sm:mt-0">
-            <Link href="/contacts/new">
-              <Button className="inline-flex items-center">
-                <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                Neuer Kontakt
-              </Button>
-            </Link>
+    <div className="space-y-6">
+      <div className="sm:flex sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Kontakte</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Verwalten Sie Ihre Geschäftskontakte und deren Informationen.
+          </p>
+        </div>
+        <div className="mt-4 sm:mt-0">
+          <Link href="/contacts/new">
+            <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+              <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              Neuer Kontakt
+            </button>
+          </Link>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
           </div>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
+      )}
 
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-gray-200 bg-gray-50 sm:flex sm:items-center sm:justify-between">
-            <div className="relative max-w-xs w-full">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-              </div>
-              <input
-                type="text"
-                placeholder="Kontakte durchsuchen..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <div className="mt-3 flex sm:mt-0 sm:ml-4">
-              <div className="relative inline-block text-left">
-                <Button
-                  variant="outline"
-                  className="inline-flex items-center"
-                  onClick={() => setShowFilterMenu(!showFilterMenu)}
-                >
-                  <FunnelIcon className="mr-2 h-5 w-5 text-gray-500" aria-hidden="true" />
-                  Filter
-                  <ChevronDownIcon className="ml-2 h-5 w-5 text-gray-500" aria-hidden="true" />
-                </Button>
-                
-                {showFilterMenu && (
-                  <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-                    <div className="py-1" role="menu" aria-orientation="vertical">
-                      <div className="px-4 py-2 text-sm text-gray-700 font-medium border-b border-gray-100">
-                        Phase filtern
-                      </div>
-                      {contactStages.map((stage) => (
-                        <button
-                          key={stage.value}
-                          className={`${
-                            selectedStage === stage.value ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                          } block px-4 py-2 text-sm w-full text-left hover:bg-gray-50`}
-                          onClick={() => {
-                            setSelectedStage(stage.value);
-                            setShowFilterMenu(false);
-                          }}
-                        >
-                          {stage.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <Button
-                variant="outline"
-                className="ml-3 inline-flex items-center"
-                onClick={() => {
-                  // CSV export logic would go here
-                  alert('CSV-Export-Funktion wird implementiert');
-                }}
-              >
-                <ArrowDownTrayIcon className="mr-2 h-5 w-5 text-gray-500" />
-                Exportieren
-              </Button>
-            </div>
-          </div>
+          <ContactFilters 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedStage={selectedStage}
+            setSelectedStage={setSelectedStage}
+            contactStages={contactStages}
+            onExportContacts={handleExportContacts}
+          />
 
           {isLoading ? (
             <div className="p-10 flex justify-center">
