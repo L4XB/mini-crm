@@ -2,12 +2,16 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
+	"time"
 
+	"github.com/deinname/mini-crm-backend/config"
 	"github.com/deinname/mini-crm-backend/models"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
-// CreateUser handles the creation of a new user
+// CreateUser handles the creation of a new user (admin only)
 func CreateUser(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -15,69 +19,255 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	result := DB.Create(&user)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	// Check if email already exists
+	var existingUser models.User
+	if result := config.DB.Where("email = ?", user.Email).First(&existingUser); result.Error == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "email already in use"})
 		return
 	}
+
+	// Check if username already exists
+	if result := config.DB.Where("username = ?", user.Username).First(&existingUser); result.Error == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "username already in use"})
+		return
+	}
+
+	// Hash password if provided
+	if user.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+			return
+		}
+		user.Password = string(hashedPassword)
+	} else {
+		// Generate a random default password if none provided
+		defaultPassword := "changeme" + strconv.FormatInt(time.Now().Unix(), 10)
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
+		user.Password = string(hashedPassword)
+	}
+
+	// Save user to database
+	result := config.DB.Create(&user)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		return
+	}
+
+	// Create default settings for user
+	settings := models.Settings{
+		UserID:   user.ID,
+		Theme:    "light",
+		Language: "en",
+	}
+	config.DB.Create(&settings)
 
 	c.JSON(http.StatusCreated, user)
 }
 
-// GetUsers returns all users
+// GetUsers returns all users (admin) or just the current user (normal user)
 func GetUsers(c *gin.Context) {
 	var users []models.User
-	result := DB.Find(&users)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	
+	// Get user role from context
+	role, exists := c.Get("user_role")
+	userID, userExists := c.Get("user_id")
+	
+	if !exists || !userExists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user information not found in context"})
 		return
+	}
+	
+	// Non-admins can only see themselves
+	if role != "admin" {
+		config.DB.Where("id = ?", userID).Find(&users)
+	} else {
+		// Admins can see all users
+		config.DB.Find(&users)
 	}
 
 	c.JSON(http.StatusOK, users)
 }
 
-// GetUser returns a specific user by ID
+// GetUser returns a specific user by ID (user can only see their own profile unless admin)
 func GetUser(c *gin.Context) {
 	id := c.Param("id")
+	
+	// Get user role and ID from context
+	role, exists := c.Get("user_role")
+	currentUserID, userExists := c.Get("user_id")
+	
+	if !exists || !userExists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user information not found in context"})
+		return
+	}
+	
+	// Convert string ID to uint for comparison
+	requestedID, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+	
+	// Non-admins can only see their own profile
+	if role != "admin" && uint(requestedID) != currentUserID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "you can only view your own profile"})
+		return
+	}
+	
 	var user models.User
-	result := DB.First(&user, id)
+	result := config.DB.Preload("Settings").First(&user, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
 	c.JSON(http.StatusOK, user)
 }
 
-// UpdateUser updates an existing user
+// UpdateUser updates an existing user (users can only update their own profile unless admin)
 func UpdateUser(c *gin.Context) {
 	id := c.Param("id")
-	var user models.User
-	result := DB.First(&user, id)
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+	
+	// Get user role and ID from context
+	role, exists := c.Get("user_role")
+	currentUserID, userExists := c.Get("user_id")
+	
+	if !exists || !userExists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user information not found in context"})
 		return
 	}
-
-	if err := c.ShouldBindJSON(&user); err != nil {
+	
+	// Convert string ID to uint for comparison
+	requestedID, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+	
+	// Non-admins can only update their own profile
+	if role != "admin" && uint(requestedID) != currentUserID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "you can only update your own profile"})
+		return
+	}
+	
+	// Get existing user
+	var user models.User
+	result := config.DB.First(&user, id)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+	
+	// Store original values to check for changes
+	originalEmail := user.Email
+	originalUsername := user.Username
+	
+	// Get update data
+	var updateData struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	
+	if err := c.ShouldBindJSON(&updateData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	DB.Save(&user)
+	
+	// Check for email uniqueness if changed
+	if updateData.Email != "" && updateData.Email != originalEmail {
+		var existingUser models.User
+		if result := config.DB.Where("email = ? AND id != ?", updateData.Email, id).First(&existingUser); result.Error == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "email already in use"})
+			return
+		}
+		user.Email = updateData.Email
+	}
+	
+	// Check for username uniqueness if changed
+	if updateData.Username != "" && updateData.Username != originalUsername {
+		var existingUser models.User
+		if result := config.DB.Where("username = ? AND id != ?", updateData.Username, id).First(&existingUser); result.Error == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "username already in use"})
+			return
+		}
+		user.Username = updateData.Username
+	}
+	
+	// Update password if provided
+	if updateData.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(updateData.Password), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+			return
+		}
+		user.Password = string(hashedPassword)
+	}
+	
+	// Save updated user
+	config.DB.Save(&user)
 	c.JSON(http.StatusOK, user)
 }
 
-// DeleteUser deletes a user
+// DeleteUser deletes a user (admin only)
 func DeleteUser(c *gin.Context) {
 	id := c.Param("id")
+	
+	// Get user ID from context to prevent self-deletion
+	currentUserID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user information not found in context"})
+		return
+	}
+	
+	// Convert string ID to uint for comparison
+	requestedID, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+	
+	// Prevent admin from deleting themselves
+	if uint(requestedID) == currentUserID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "you cannot delete your own account"})
+		return
+	}
+	
+	// Check if user exists
 	var user models.User
-	result := DB.First(&user, id)
+	result := config.DB.First(&user, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
-	DB.Delete(&user)
-	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+	// Delete user with cascade delete for associated records
+	tx := config.DB.Begin()
+	
+	// Delete related settings
+	tx.Where("user_id = ?", id).Delete(&models.Settings{})
+	
+	// Delete related contacts
+	tx.Where("user_id = ?", id).Delete(&models.Contact{})
+	
+	// Delete related deals
+	tx.Where("user_id = ?", id).Delete(&models.Deal{})
+	
+	// Delete related tasks
+	tx.Where("user_id = ?", id).Delete(&models.Task{})
+	
+	// Delete related notes
+	tx.Where("user_id = ?", id).Delete(&models.Note{})
+	
+	// Finally delete the user
+	tx.Delete(&user)
+	
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete user and related data"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "user and related data deleted successfully"})
 }
