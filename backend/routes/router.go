@@ -1,9 +1,18 @@
 package routes
 
 import (
+	"net/http"
+	"os"
+	"strings"
+
 	"github.com/deinname/mini-crm-backend/controllers"
+	_ "github.com/deinname/mini-crm-backend/docs" // Swagger-Dokumentation importieren
 	"github.com/deinname/mini-crm-backend/middleware"
+	"github.com/deinname/mini-crm-backend/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func SetupRouter() *gin.Engine {
@@ -16,6 +25,9 @@ func SetupRouter() *gin.Engine {
 	// Logging-Middleware hinzufügen
 	r.Use(middleware.LoggerMiddleware())
 	
+	// Metrics-Middleware für Monitoring
+	r.Use(middleware.MetricsMiddleware())
+	
 	// Rate Limiter Middleware
 	r.Use(middleware.RateLimiterMiddleware())
 	
@@ -24,10 +36,85 @@ func SetupRouter() *gin.Engine {
 
 	// CORS configuration
 	r.Use(middleware.CorsMiddleware())
+	
+	// API Key validation for external applications
+	r.Use(middleware.APIKeyMiddleware())
 
-	// Health check endpoint
+	// Health check endpoint mit erweitertem Status
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
+		// Parameter für detaillierte Infos
+		detailed := c.Query("detailed") == "true"
+		
+		// Health-Status abrufen
+		status := utils.CheckHealth(detailed)
+		
+		// HTTP-Status basierend auf Gesundheitszustand
+		httpStatus := http.StatusOK
+		if status.Status == "error" {
+			httpStatus = http.StatusServiceUnavailable
+		}
+		
+		c.JSON(httpStatus, status)
+	})
+	
+	// Einfacher Readiness-Check für Kubernetes/Docker
+	r.GET("/ready", func(c *gin.Context) {
+		// Schneller Check ohne detaillierte Infos
+		status := utils.CheckHealth(false)
+		
+		if status.Status == "error" {
+			c.AbortWithStatus(http.StatusServiceUnavailable)
+			return
+		}
+		
+		c.Status(http.StatusOK)
+	})
+	
+	// Prometheus Metrics endpoint (protected in production)
+	if os.Getenv("ENV") == "production" {
+		// In Produktion mit Basic Auth schützen
+		r.GET("/metrics", gin.BasicAuth(gin.Accounts{
+			os.Getenv("METRICS_USER"): os.Getenv("METRICS_PASSWORD"),
+		}), gin.WrapH(promhttp.Handler()))
+	} else {
+		// In Entwicklung offen lassen
+		r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	}
+	
+	// Swagger-Dokumentation (nur in Entwicklungsumgebung oder auf Anfrage verfügbar)
+	if os.Getenv("ENV") != "production" || os.Getenv("ENABLE_SWAGGER") == "true" {
+		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
+
+	// Setze Cache-Control header für bessere Performance
+	r.Use(func(c *gin.Context) {
+		// Set cache control headers - dynamische API-Daten sollten nicht gecached werden
+		if !strings.HasPrefix(c.Request.URL.Path, "/assets/") && 
+		   !strings.HasPrefix(c.Request.URL.Path, "/static/") {
+			c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+			c.Header("Pragma", "no-cache")
+			c.Header("Expires", "0")
+		}
+		c.Next()
+	})
+
+	// Füge Security-Header hinzu
+	r.Use(func(c *gin.Context) {
+		// Sicherheitsheader für Webanwendung
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("X-XSS-Protection", "1; mode=block")
+		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		
+		// Content-Security-Policy basierend auf Umgebung setzen
+		if os.Getenv("ENV") == "production" {
+			// Strengere CSP für Produktion
+			c.Header("Content-Security-Policy", "default-src 'self'; connect-src 'self' https://api.yourdomain.com; img-src 'self' data:; style-src 'self' 'unsafe-inline';")
+		} else {
+			// Weniger streng für Entwicklung
+			c.Header("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval'; img-src * data:;")
+		}
+		c.Next()
 	})
 
 	// API version group
@@ -41,6 +128,10 @@ func SetupRouter() *gin.Engine {
 		auth.POST("/login", middleware.LoginRateLimiter(), controllers.Login)
 		auth.GET("/me", middleware.AuthMiddleware(), controllers.GetMe)
 		auth.POST("/refresh", middleware.AuthMiddleware(), controllers.RefreshToken)
+		
+		// Spezielle Mobile-App-Endpunkte - optimiert für Flutter-Integration
+		auth.POST("/mobile/login", middleware.LoginRateLimiter(), controllers.MobileLogin)
+		auth.POST("/mobile/refresh", controllers.MobileRefreshToken)
 	}
 
 	// Protected routes

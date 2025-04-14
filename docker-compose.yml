@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Backend API Service
+  api:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mini_crm_api
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=mini_crm
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_EXPIRATION_HOURS=24
+      - PORT=8081
+      - ENV=production
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - LOG_LEVEL=info
+    networks:
+      - mini_crm_network
+    volumes:
+      - api_logs:/app/logs
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: mini_crm_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=mini_crm
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mini_crm_network
+    command: postgres -c 'max_connections=200'
+
+networks:
+  mini_crm_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  api_logs:

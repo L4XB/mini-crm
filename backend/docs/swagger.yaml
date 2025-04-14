@@ -1,0 +1,26 @@
+basePath: /api/v1
+host: localhost:8081
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: API for Mini CRM System
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Mini CRM API
+  version: "1.0"
+paths: {}
+securityDefinitions:
+  ApiKeyAuth:
+    description: API key for mobile applications
+    in: header
+    name: X-API-Key
+    type: apiKey
+  BearerAuth:
+    description: Enter the token with the `Bearer ` prefix, e.g. "Bearer abcde12345".
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
