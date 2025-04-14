@@ -8,10 +8,13 @@ import (
 
 	"github.com/deinname/mini-crm-backend/config"
 	"github.com/deinname/mini-crm-backend/controllers"
+	"github.com/deinname/mini-crm-backend/middleware"
 	"github.com/deinname/mini-crm-backend/models"
 	"github.com/deinname/mini-crm-backend/routes"
+	"github.com/deinname/mini-crm-backend/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -107,21 +110,37 @@ func main() {
 	// Setup environment
 	setupEnvironment()
 
+	// Initialize logger
+	utils.InitLogger()
+	utils.Logger.Info("Logger initialized successfully")
+
+	// Start cleanup task for rate limiter
+	middleware.StartCleanupTask()
+	utils.Logger.Info("Rate limiter cleanup task started")
+
 	// Connect to database
 	config.ConnectDB()
+	utils.Logger.Info("Database connection established")
 
 	// Run migrations
 	migrate()
+	utils.Logger.Info("Database migrations completed")
 
 	// Initialize controllers with DB connection
 	controllers.InitDB()
+	utils.Logger.Info("Controllers initialized")
 
 	// Initialize validator
 	validate := validator.New()
 	controllers.SetValidator(validate)
+	utils.Logger.Info("Validator initialized")
 
-	// Log application start
-	fmt.Println("Mini CRM API started...")
+	// Log application start info
+	utils.Logger.WithFields(logrus.Fields{
+		"port":        os.Getenv("PORT"),
+		"environment": os.Getenv("ENV"),
+		"version":    "1.0.0",
+	}).Info("Mini CRM API starting...")
 
 	// Setup and run router
 	r := routes.SetupRouter()

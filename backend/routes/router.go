@@ -7,7 +7,20 @@ import (
 )
 
 func SetupRouter() *gin.Engine {
-	r := gin.Default()
+	// Verwende New() statt Default() um eigene Logger zu verwenden
+	r := gin.New()
+
+	// Recovery middleware für Panic-Handling
+	r.Use(gin.Recovery())
+	
+	// Logging-Middleware hinzufügen
+	r.Use(middleware.LoggerMiddleware())
+	
+	// Rate Limiter Middleware
+	r.Use(middleware.RateLimiterMiddleware())
+	
+	// Anfragegröße begrenzen auf 10MB
+	r.Use(middleware.RequestSizeMiddleware(10 * 1024 * 1024))
 
 	// CORS configuration
 	r.Use(middleware.CorsMiddleware())
@@ -23,8 +36,9 @@ func SetupRouter() *gin.Engine {
 	// Public authentication routes
 	auth := api.Group("/auth")
 	{
-		auth.POST("/register", controllers.Register)
-		auth.POST("/login", controllers.Login)
+		// Strengeres Rate-Limiting für Auth-Endpunkte
+		auth.POST("/register", middleware.LoginRateLimiter(), controllers.Register)
+		auth.POST("/login", middleware.LoginRateLimiter(), controllers.Login)
 		auth.GET("/me", middleware.AuthMiddleware(), controllers.GetMe)
 		auth.POST("/refresh", middleware.AuthMiddleware(), controllers.RefreshToken)
 	}
