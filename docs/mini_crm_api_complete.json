@@ -1,0 +1,635 @@
+{
+  "info": {
+    "name": "Mini CRM API (v2)",
+    "description": "Vollständige API-Dokumentation für das Mini CRM Backend System mit mobiler Unterstützung und Monitoring",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "2.0.0"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Authentifizierung und Benutzerverwaltung",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"securepassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Neuen Benutzer registrieren"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Benutzeranmeldung"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Mobile Authentication",
+      "description": "Spezielle Authentifizierung für mobile Anwendungen",
+      "item": [
+        {
+          "name": "Mobile Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{mobileApiKey}}",
+                "description": "API-Key für mobile Anwendungen"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"device_id\": \"unique-device-identifier\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/mobile/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "login"
+              ]
+            },
+            "description": "Anmeldung für mobile Geräte mit speziellem Refresh-Token"
+          },
+          "response": []
+        },
+        {
+          "name": "Mobile Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{mobileApiKey}}",
+                "description": "API-Key für mobile Anwendungen"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"device_id\": \"unique-device-identifier\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/mobile/refresh-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "refresh-token"
+              ]
+            },
+            "description": "Erneuert den Access-Token mit einem Refresh-Token für mobile Geräte"
+          },
+          "response": []
+        },
+        {
+          "name": "Mobile Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{mobileApiKey}}",
+                "description": "API-Key für mobile Anwendungen"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/mobile/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "profile"
+              ]
+            },
+            "description": "Ruft das Benutzerprofil für mobile Anwendungen ab"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "Benutzerverwaltung (Admin-Rechte erforderlich für einige Endpoints)",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "description": "Abrufen aller Benutzer (Admin-Berechtigung erforderlich)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "1"
+              ]
+            },
+            "description": "Abrufen eines Benutzers anhand seiner ID"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "description": "Kontaktverwaltung",
+      "item": [
+        {
+          "name": "Get All Contacts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contacts"
+              ]
+            },
+            "description": "Abrufen aller Kontakte des angemeldeten Benutzers"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Thomas\",\n  \"last_name\": \"Müller\",\n  \"email\": \"thomas@example.com\",\n  \"phone\": \"+49123456789\",\n  \"position\": \"Marketing Manager\",\n  \"company\": \"Example GmbH\",\n  \"contact_stage\": \"Lead\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contacts"
+              ]
+            },
+            "description": "Erstellen eines neuen Kontakts"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Deals",
+      "description": "Verwaltung von Geschäftsdeals",
+      "item": [
+        {
+          "name": "Get All Deals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/deals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "deals"
+              ]
+            },
+            "description": "Abrufen aller Deals des angemeldeten Benutzers"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Deal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Software-Lizenz Verkauf\",\n  \"description\": \"Verkauf von 5 Lizenzen für CRM-Software\",\n  \"value\": 5000,\n  \"status\": \"In Verhandlung\",\n  \"expected_date\": \"2025-06-15T00:00:00Z\",\n  \"contact_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/deals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "deals"
+              ]
+            },
+            "description": "Erstellen eines neuen Deals"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notes",
+      "description": "Verwaltung von Notizen",
+      "item": [
+        {
+          "name": "Get All Notes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notes"
+              ]
+            },
+            "description": "Abrufen aller Notizen des angemeldeten Benutzers"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "description": "Verwaltung von Aufgaben",
+      "item": [
+        {
+          "name": "Get All Tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks"
+              ]
+            },
+            "description": "Abrufen aller Aufgaben des angemeldeten Benutzers"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Angebot erstellen\",\n  \"details\": \"Angebot für Software-Lizenzen erstellen und per E-Mail versenden\",\n  \"due_date\": \"2025-04-20T15:00:00Z\",\n  \"deal_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks"
+              ]
+            },
+            "description": "Erstellen einer neuen Aufgabe"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Monitoring und System",
+      "description": "Monitoring-, Health-Check- und System-Endpunkte",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Überprüft den Gesundheitszustand der Anwendung"
+          },
+          "response": []
+        },
+        {
+          "name": "Detailed Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health?detailed=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": [
+                {
+                  "key": "detailed",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Detaillierter Health-Check mit zusätzlichen Informationen"
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ready",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ready"
+              ]
+            },
+            "description": "Überprüft, ob die Anwendung bereit ist, Anfragen zu verarbeiten"
+          },
+          "response": []
+        },
+        {
+          "name": "Metrics (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "description": "Benötigt Admin-Token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/metrics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metrics"
+              ]
+            },
+            "description": "Prometheus-Metriken (nur für Administratoren)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "UI-Entwicklung & Tests",
+      "description": "Endpunkte und Beispiele für die UI-Entwicklung im Testmodus",
+      "item": [
+        {
+          "name": "Test-Modus Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"test1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login mit dem vordefinierten Testbenutzer im UI-Entwicklungsmodus"
+          },
+          "response": []
+        },
+        {
+          "name": "Kontakte abrufen (ohne Auth)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contacts"
+              ]
+            },
+            "description": "Kontakte abrufen ohne Authentifizierung (nur im Testmodus mit DISABLE_AUTH_FOR_TESTS=true)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081",
+      "type": "string",
+      "description": "Die Basis-URL des API-Servers"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT-Token für Authentifizierung"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT-Token für Administrator-Zugriff"
+    },
+    {
+      "key": "mobileApiKey",
+      "value": "test_mobile_key",
+      "type": "string",
+      "description": "API-Key für mobile Anwendungen"
+    }
+  ]
+}

@@ -1,0 +1,637 @@
+{
+  "item": [
+    {
+      "name": "Mobile Authentication",
+      "description": "Spezielle Authentifizierung für mobile Anwendungen",
+      "item": [
+        {
+          "name": "Mobile Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{mobileApiKey}}",
+                "description": "API-Key für mobile Anwendungen"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"device_id\": \"unique-device-identifier\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/mobile/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "login"
+              ]
+            },
+            "description": "Anmeldung für mobile Geräte mit speziellem Refresh-Token"
+          },
+          "response": [
+            {
+              "name": "Erfolgreiche Anmeldung",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{mobileApiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"device_id\": \"unique-device-identifier\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/mobile/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "mobile",
+                    "login"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 43200\n}",
+              "cookie": []
+            }
+          ]
+        },
+        {
+          "name": "Mobile Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{mobileApiKey}}",
+                "description": "API-Key für mobile Anwendungen"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"device_id\": \"unique-device-identifier\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/mobile/refresh-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "refresh-token"
+              ]
+            },
+            "description": "Erneuert den Access-Token mit einem Refresh-Token für mobile Geräte"
+          },
+          "response": [
+            {
+              "name": "Erfolgreiche Token-Erneuerung",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{mobileApiKey}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"device_id\": \"unique-device-identifier\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/mobile/refresh-token",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "mobile",
+                    "refresh-token"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 43200\n}",
+              "cookie": []
+            }
+          ]
+        },
+        {
+          "name": "Mobile Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{mobileApiKey}}",
+                "description": "API-Key für mobile Anwendungen"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/mobile/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "mobile",
+                "profile"
+              ]
+            },
+            "description": "Ruft das Benutzerprofil für mobile Anwendungen ab"
+          },
+          "response": [
+            {
+              "name": "Erfolgreiches Abrufen des Profils",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{mobileApiKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/mobile/profile",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "mobile",
+                    "profile"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 1,\n  \"username\": \"testuser\",\n  \"email\": \"user@example.com\",\n  \"role\": \"user\",\n  \"created_at\": \"2025-04-14T13:45:30Z\",\n  \"updated_at\": \"2025-04-14T13:45:30Z\",\n  \"settings\": {\n    \"theme\": \"dark\",\n    \"language\": \"de\"\n  }\n}",
+              "cookie": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Monitoring und System",
+      "description": "Monitoring-, Health-Check- und System-Endpunkte",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Überprüft den Gesundheitszustand der Anwendung"
+          },
+          "response": [
+            {
+              "name": "Erfolgreicher Health-Check",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"ok\",\n  \"version\": \"1.0.0\",\n  \"environment\": \"development\",\n  \"uptime\": \"1h30m15s\",\n  \"start_time\": \"2025-04-14T13:20:00Z\",\n  \"services\": {\n    \"database\": {\n      \"status\": \"ok\",\n      \"description\": \"Datenbankverbindung erfolgreich hergestellt\",\n      \"timestamp\": \"2025-04-14T14:50:15Z\"\n    }\n  }\n}",
+              "cookie": []
+            }
+          ]
+        },
+        {
+          "name": "Detailed Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health?detailed=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": [
+                {
+                  "key": "detailed",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Detaillierter Health-Check mit zusätzlichen Informationen"
+          },
+          "response": [
+            {
+              "name": "Detaillierter Health-Check",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health?detailed=true",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ],
+                  "query": [
+                    {
+                      "key": "detailed",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"ok\",\n  \"version\": \"1.0.0\",\n  \"environment\": \"development\",\n  \"uptime\": \"1h30m15s\",\n  \"start_time\": \"2025-04-14T13:20:00Z\",\n  \"memory\": {\n    \"alloc\": 1052672,\n    \"total_alloc\": 15632312,\n    \"sys\": 16273480,\n    \"num_gc\": 12\n  },\n  \"services\": {\n    \"database\": {\n      \"status\": \"ok\",\n      \"description\": \"Datenbankverbindung erfolgreich hergestellt\",\n      \"timestamp\": \"2025-04-14T14:50:15Z\"\n    }\n  }\n}",
+              "cookie": []
+            }
+          ]
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ready",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ready"
+              ]
+            },
+            "description": "Überprüft, ob die Anwendung bereit ist, Anfragen zu verarbeiten"
+          },
+          "response": [
+            {
+              "name": "Erfolgreicher Readiness-Check",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/ready",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ready"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [],
+              "body": "",
+              "cookie": []
+            }
+          ]
+        },
+        {
+          "name": "Metrics (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "description": "Benötigt Admin-Token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/metrics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metrics"
+              ]
+            },
+            "description": "Prometheus-Metriken (nur für Administratoren)"
+          },
+          "response": [
+            {
+              "name": "Erfolgreiche Metriken-Abfrage",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/metrics",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "metrics"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain; version=0.0.4"
+                }
+              ],
+              "body": "# HELP mini_crm_http_requests_total Total number of HTTP requests\n# TYPE mini_crm_http_requests_total counter\nmini_crm_http_requests_total{endpoint=\"/api/v1/auth/login\",method=\"POST\",status=\"200\"} 15\nmini_crm_http_requests_total{endpoint=\"/api/v1/auth/register\",method=\"POST\",status=\"201\"} 3\nmini_crm_http_requests_total{endpoint=\"/api/v1/contacts\",method=\"GET\",status=\"200\"} 42\n\n# HELP mini_crm_http_request_duration_seconds Duration of HTTP requests in seconds\n# TYPE mini_crm_http_request_duration_seconds histogram\nmini_crm_http_request_duration_seconds_bucket{endpoint=\"/api/v1/contacts\",method=\"GET\",le=\"0.01\"} 30\nmini_crm_http_request_duration_seconds_bucket{endpoint=\"/api/v1/contacts\",method=\"GET\",le=\"0.025\"} 38\nmini_crm_http_request_duration_seconds_bucket{endpoint=\"/api/v1/contacts\",method=\"GET\",le=\"0.05\"} 41\nmini_crm_http_request_duration_seconds_bucket{endpoint=\"/api/v1/contacts\",method=\"GET\",le=\"0.1\"} 42\n\n# HELP mini_crm_http_requests_in_flight Current number of HTTP requests being processed\n# TYPE mini_crm_http_requests_in_flight gauge\nmini_crm_http_requests_in_flight 2\n\n# HELP mini_crm_api_calls_per_user Number of API calls per user\n# TYPE mini_crm_api_calls_per_user counter\nmini_crm_api_calls_per_user{endpoint=\"/api/v1/contacts\",user_id=\"1\"} 25\nmini_crm_api_calls_per_user{endpoint=\"/api/v1/contacts\",user_id=\"2\"} 17",
+              "cookie": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "UI-Entwicklung & Tests",
+      "description": "Endpunkte und Beispiele für die UI-Entwicklung im Testmodus",
+      "item": [
+        {
+          "name": "Test-Modus Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"test1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login mit dem vordefinierten Testbenutzer im UI-Entwicklungsmodus"
+          },
+          "response": [
+            {
+              "name": "Erfolgreicher Login",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"test1234\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Test-Mode",
+                  "value": "enabled"
+                }
+              ],
+              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@example.com\",\n    \"role\": \"admin\"\n  }\n}",
+              "cookie": []
+            }
+          ]
+        },
+        {
+          "name": "Kontakte abrufen (ohne Auth)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contacts"
+              ]
+            },
+            "description": "Kontakte abrufen ohne Authentifizierung (nur im Testmodus mit DISABLE_AUTH_FOR_TESTS=true)"
+          },
+          "response": [
+            {
+              "name": "Kontakte ohne Auth (Testmodus)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/contacts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "contacts"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Test-Mode",
+                  "value": "enabled"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"first_name\": \"Max\",\n      \"last_name\": \"Mustermann\",\n      \"email\": \"max@example.com\",\n      \"phone\": \"+49123456789\",\n      \"position\": \"CEO\",\n      \"company\": \"Musterfirma GmbH\",\n      \"contact_stage\": \"Lead\",\n      \"user_id\": 1,\n      \"created_at\": \"2025-04-14T13:45:30Z\",\n      \"updated_at\": \"2025-04-14T13:45:30Z\"\n    },\n    {\n      \"id\": 2,\n      \"first_name\": \"Erika\",\n      \"last_name\": \"Musterfrau\",\n      \"email\": \"erika@example.com\",\n      \"phone\": \"+49987654321\",\n      \"position\": \"CTO\",\n      \"company\": \"Techfirma AG\",\n      \"contact_stage\": \"Customer\",\n      \"user_id\": 1,\n      \"created_at\": \"2025-04-14T13:45:30Z\",\n      \"updated_at\": \"2025-04-14T13:45:30Z\"\n    }\n  ],\n  \"meta\": {\n    \"total\": 2,\n    \"page\": 1,\n    \"per_page\": 10\n  }\n}",
+              "cookie": []
+            }
+          ]
+        },
+        {
+          "name": "Testdaten-Status prüfen",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "stats"
+              ]
+            },
+            "description": "Überprüfen Sie, ob die Testdaten korrekt geladen wurden"
+          },
+          "response": [
+            {
+              "name": "Erfolgreiche Statistik",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/stats",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "users",
+                    "stats"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Test-Mode",
+                  "value": "enabled"
+                }
+              ],
+              "body": "{\n  \"user_count\": 2,\n  \"contact_count\": 3,\n  \"deal_count\": 3,\n  \"note_count\": 4,\n  \"task_count\": 3,\n  \"has_test_data\": true\n}",
+              "cookie": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

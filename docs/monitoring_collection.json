@@ -1,0 +1,208 @@
+{
+  "item": [
+    {
+      "name": "Monitoring und System",
+      "description": "Monitoring-, Health-Check- und System-Endpunkte",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Überprüft den Gesundheitszustand der Anwendung"
+          },
+          "response": [
+            {
+              "name": "Erfolgreicher Health-Check",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"ok\",\n  \"version\": \"1.0.0\",\n  \"environment\": \"development\",\n  \"uptime\": \"1h30m15s\",\n  \"start_time\": \"2025-04-14T13:20:00Z\",\n  \"services\": {\n    \"database\": {\n      \"status\": \"ok\",\n      \"description\": \"Datenbankverbindung erfolgreich hergestellt\",\n      \"timestamp\": \"2025-04-14T14:50:15Z\"\n    }\n  }\n}",
+              "cookie": []
+            }
+          ]
+        },
+        {
+          "name": "Detailed Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health?detailed=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": [
+                {
+                  "key": "detailed",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Detaillierter Health-Check mit zusätzlichen Informationen"
+          },
+          "response": [
+            {
+              "name": "Detaillierter Health-Check",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health?detailed=true",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ],
+                  "query": [
+                    {
+                      "key": "detailed",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"ok\",\n  \"version\": \"1.0.0\",\n  \"environment\": \"development\",\n  \"uptime\": \"1h30m15s\",\n  \"start_time\": \"2025-04-14T13:20:00Z\",\n  \"memory\": {\n    \"alloc\": 1052672,\n    \"total_alloc\": 15632312,\n    \"sys\": 16273480,\n    \"num_gc\": 12\n  },\n  \"services\": {\n    \"database\": {\n      \"status\": \"ok\",\n      \"description\": \"Datenbankverbindung erfolgreich hergestellt\",\n      \"timestamp\": \"2025-04-14T14:50:15Z\"\n    }\n  }\n}",
+              "cookie": []
+            }
+          ]
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ready",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ready"
+              ]
+            },
+            "description": "Überprüft, ob die Anwendung bereit ist, Anfragen zu verarbeiten"
+          },
+          "response": [
+            {
+              "name": "Erfolgreicher Readiness-Check",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/ready",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "ready"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [],
+              "body": "",
+              "cookie": []
+            }
+          ]
+        },
+        {
+          "name": "Metrics (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "description": "Benötigt Admin-Token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/metrics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metrics"
+              ]
+            },
+            "description": "Prometheus-Metriken (nur für Administratoren)"
+          },
+          "response": [
+            {
+              "name": "Erfolgreiche Metriken-Abfrage",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/metrics",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "metrics"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain; version=0.0.4"
+                }
+              ],
+              "body": "# HELP mini_crm_http_requests_total Total number of HTTP requests\n# TYPE mini_crm_http_requests_total counter\nmini_crm_http_requests_total{endpoint=\"/api/v1/auth/login\",method=\"POST\",status=\"200\"} 15\nmini_crm_http_requests_total{endpoint=\"/api/v1/auth/register\",method=\"POST\",status=\"201\"} 3\nmini_crm_http_requests_total{endpoint=\"/api/v1/contacts\",method=\"GET\",status=\"200\"} 42\n\n# HELP mini_crm_http_request_duration_seconds Duration of HTTP requests in seconds\n# TYPE mini_crm_http_request_duration_seconds histogram\nmini_crm_http_request_duration_seconds_bucket{endpoint=\"/api/v1/contacts\",method=\"GET\",le=\"0.01\"} 30\nmini_crm_http_request_duration_seconds_bucket{endpoint=\"/api/v1/contacts\",method=\"GET\",le=\"0.025\"} 38\nmini_crm_http_request_duration_seconds_bucket{endpoint=\"/api/v1/contacts\",method=\"GET\",le=\"0.05\"} 41\nmini_crm_http_request_duration_seconds_bucket{endpoint=\"/api/v1/contacts\",method=\"GET\",le=\"0.1\"} 42\n\n# HELP mini_crm_http_requests_in_flight Current number of HTTP requests being processed\n# TYPE mini_crm_http_requests_in_flight gauge\nmini_crm_http_requests_in_flight 2\n\n# HELP mini_crm_api_calls_per_user Number of API calls per user\n# TYPE mini_crm_api_calls_per_user counter\nmini_crm_api_calls_per_user{endpoint=\"/api/v1/contacts\",user_id=\"1\"} 25\nmini_crm_api_calls_per_user{endpoint=\"/api/v1/contacts\",user_id=\"2\"} 17",
+              "cookie": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

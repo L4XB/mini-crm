@@ -71,7 +71,7 @@ func migrate() {
 // createDefaultAdmin creates a default admin user
 func createDefaultAdmin() {
 	log.Println("Creating default admin user...")
-	
+
 	// Hash password using bcrypt directly
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
 	if err != nil {
@@ -119,8 +119,26 @@ func main() {
 	utils.Logger.Info("Rate limiter cleanup task started")
 
 	// Connect to database
-	config.ConnectDB()
+	config.LoadConfig()
+	db, err := config.SetupDB()
+	if err != nil {
+		utils.Logger.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	// Set global DB variable
+	config.DB = db
 	utils.Logger.Info("Database connection established")
+
+	// Testdaten für UI-Entwicklung initialisieren, wenn aktiviert
+	if os.Getenv("ENV") == "development" && os.Getenv("SEED_TEST_DATA") == "true" {
+		seedFunc := utils.InitTestData()
+		err = seedFunc(db)
+		if err != nil {
+			utils.Logger.Warnf("Error initializing test data: %v", err)
+		} else {
+			utils.Logger.Info("Test data initialized successfully")
+		}
+	}
 
 	// Run migrations
 	migrate()
@@ -139,7 +157,7 @@ func main() {
 	utils.Logger.WithFields(logrus.Fields{
 		"port":        os.Getenv("PORT"),
 		"environment": os.Getenv("ENV"),
-		"version":    "1.0.0",
+		"version":     "1.0.0",
 	}).Info("Mini CRM API starting...")
 
 	// Setup and run router
