@@ -27,14 +27,14 @@ func CreateNote(c *gin.Context) {
 // GetNotes returns all notes, optionally filtered by user_id, contact_id, or deal_id
 func GetNotes(c *gin.Context) {
 	var notes []models.Note
-	
+
 	// Support filtering by different parameters
 	userID := c.Query("user_id")
 	contactID := c.Query("contact_id")
 	dealID := c.Query("deal_id")
-	
+
 	query := DB
-	
+
 	if userID != "" {
 		query = query.Where("user_id = ?", userID)
 	}
@@ -44,7 +44,7 @@ func GetNotes(c *gin.Context) {
 	if dealID != "" {
 		query = query.Where("deal_id = ?", dealID)
 	}
-	
+
 	query.Find(&notes)
 	c.JSON(http.StatusOK, notes)
 }
@@ -53,7 +53,7 @@ func GetNotes(c *gin.Context) {
 func GetNote(c *gin.Context) {
 	id := c.Param("id")
 	var note models.Note
-	
+
 	result := DB.Preload("Contact").Preload("Deal").First(&note, id)
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Note not found"})

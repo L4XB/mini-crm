@@ -45,8 +45,8 @@ func SetupRouter() *gin.Engine {
 	r.PATCH("/tasks/:id/toggle", controllers.ToggleTaskCompletion)
 
 	// settings Routes
-	r.GET("/users/:user_id/settings", controllers.GetUserSettings)
-	r.PUT("/users/:user_id/settings", controllers.UpdateSettings)
+	r.GET("/users/:id/settings", controllers.GetUserSettings)
+	r.PUT("/users/:id/settings", controllers.UpdateSettings)
 
 	return r
 }

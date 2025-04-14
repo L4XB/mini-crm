@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/deinname/mini-crm-backend/config"
+	"github.com/deinname/mini-crm-backend/controllers"
 	"github.com/deinname/mini-crm-backend/models"
 	"github.com/deinname/mini-crm-backend/routes"
 )
@@ -23,6 +24,9 @@ func main() {
 
 	// simple test to see if it works
 	fmt.Println("App started...")
+
+	// Initialize controllers with DB connection
+	controllers.InitDB()
 
 	// routes (we will handle this later)
 	r := routes.SetupRouter()

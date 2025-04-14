@@ -5,11 +5,7 @@ import (
 
 	"github.com/deinname/mini-crm-backend/models"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
-
-// DB instance to be initialized in main
-var DB *gorm.DB
 
 // CreateUser handles the creation of a new user
 func CreateUser(c *gin.Context) {

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/deinname/mini-crm-backend/models"
 	"github.com/gin-gonic/gin"
@@ -9,7 +10,7 @@ import (
 
 // GetUserSettings returns settings for a specific user
 func GetUserSettings(c *gin.Context) {
-	userID := c.Param("user_id")
+	userID := c.Param("id")
 	var settings models.Settings
 	
 	result := DB.Where("user_id = ?", userID).First(&settings)
@@ -28,7 +29,7 @@ func GetUserSettings(c *gin.Context) {
 
 // UpdateSettings updates user settings
 func UpdateSettings(c *gin.Context) {
-	userID := c.Param("user_id")
+	userID := c.Param("id")
 	var settings models.Settings
 	
 	// Try to find existing settings
@@ -56,8 +57,9 @@ func UpdateSettings(c *gin.Context) {
 
 // Helper function to parse uint from string
 func parseUint(s string) uint64 {
-	var result uint64
-	// Using ParseUint from strconv would be better in real app
-	// We're simplifying here, but this is unsafe for production
+	result, err := strconv.ParseUint(s, 10, 64)
+	if err != nil {
+		return 0
+	}
 	return result
 }
