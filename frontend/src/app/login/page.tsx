@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { mockAuthService } from '@/services/mockAuth';
+import { authService } from '@/services/api';
 
 // Authentifizierungskontext
 const useAuth = () => {
@@ -16,10 +16,9 @@ const useAuth = () => {
     console.log('Versuche Login mit:', { email, password: '***' });
     
     try {
-      // Verwende den Mock-Authentifizierungsdienst, da die tatsächlichen API-Endpoints
-      // nicht wie in der Dokumentation beschrieben funktionieren
-      console.log('Versuche Login mit Mock-Service...');
-      const data = await mockAuthService.login(email, password);
+      // Verwende den echten Authentifizierungsdienst
+      console.log('Versuche Login mit echtem API-Service...');
+      const data = await authService.login(email, password);
       console.log('Login-Antwort:', data);
       
       localStorage.setItem('token', data.token);

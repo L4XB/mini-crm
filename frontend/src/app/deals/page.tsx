@@ -1,17 +1,38 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   PlusIcon, 
   FunnelIcon, 
   ArrowPathIcon, 
   EllipsisHorizontalIcon, 
-  ChevronDownIcon 
+  ChevronDownIcon,
+  PencilIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon, TagIcon, CurrencyEuroIcon } from '@heroicons/react/24/solid';
+import { dealsService } from '@/services/api';
+import { useRouter } from 'next/navigation';
 
-// Mock data for deals
-const MOCK_DEALS = [
+// Define interface for Deal
+interface Deal {
+  id: number;
+  title: string;
+  customer: string;
+  value: number;
+  stage: string;
+  stageName?: string;
+  probability?: number;
+  expectedCloseDate: string;
+  assignedTo?: string;
+  tags?: string[];
+  lastActivity?: string;
+  createdAt: string;
+  status?: string;
+}
+
+// Empty array to be filled with API data
+const EMPTY_DEALS: Deal[] = [
   {
     id: 1,
     title: 'Software Implementierung für ABC GmbH',
@@ -126,26 +147,49 @@ const MOCK_DEALS = [
   },
 ];
 
+// Map API status to stage names
+const getStageNameFromStatus = (status: string): string => {
+  const stageMap: Record<string, string> = {
+    'discovery': 'Discovery',
+    'qualified': 'Qualified',
+    'proposal': 'Proposal', 
+    'negotiation': 'Negotiation',
+    'closing': 'Closing',
+    'won': 'Won',
+    'lost': 'Lost',
+    // Default values if API returns different statuses
+    'in_progress': 'In Progress',
+    'closed_won': 'Won',
+    'closed_lost': 'Lost'
+  };
+  
+  return stageMap[status] || 'Unknown';
+};
+
 // Stage color mapping
-const STAGE_COLORS = {
+const STAGE_COLORS: Record<string, string> = {
   discovery: 'bg-blue-100 text-blue-800',
   qualified: 'bg-purple-100 text-purple-800',
   proposal: 'bg-amber-100 text-amber-800',
   negotiation: 'bg-orange-100 text-orange-800',
   closing: 'bg-indigo-100 text-indigo-800',
+  won: 'bg-green-100 text-green-800',
+  lost: 'bg-red-100 text-red-800',
+  // Keep backwards compatibility
   closed_won: 'bg-green-100 text-green-800',
   closed_lost: 'bg-red-100 text-red-800',
+  in_progress: 'bg-blue-100 text-blue-800'
 };
 
 // Helper function to format dates
 const formatDate = (dateString: string) => {
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
-  return new Date(dateString).toLocaleDateString('de-DE', options);
+  return new Date(dateString).toLocaleDateString('en-US', options);
 };
 
 // Helper function to format currency
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount);
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 };
 
 // Component for deal tags
@@ -155,12 +199,78 @@ const DealTag = ({ text }: { text: string }) => (
   </span>
 );
 
+// Define more accurate type for Deal props with expectedDate instead of expectedCloseDate to align with API response
+interface DealWithExpectedDate extends Omit<Deal, 'expectedCloseDate'> {
+  expectedDate: string;
+}
+
 export default function DealsPage() {
+  const router = useRouter();
+  const [deals, setDeals] = useState<DealWithExpectedDate[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
     key: 'lastActivity',
     direction: 'desc',
   });
+
+  // Fetch deals from API
+  useEffect(() => {
+    const fetchDeals = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await dealsService.getAll();
+        // Map API data to our Deal interface
+        const formattedDeals = data.map((deal: any) => ({
+          id: deal.id,
+          title: deal.title || deal.name || `Deal #${deal.id}`,
+          customer: deal.customer || deal.client || 'Unknown',
+          value: deal.value || deal.amount || 0,
+          stage: deal.stage || deal.status || 'discovery',
+          stageName: getStageNameFromStatus(deal.stage || deal.status || 'discovery'),
+          probability: deal.probability || 50,
+          expectedDate: deal.expected_date || deal.expectedDate || deal.close_date || new Date().toISOString(),
+          assignedTo: deal.assigned_to || deal.assignedTo || 'Unassigned',
+          tags: deal.tags || [],
+          lastActivity: deal.last_activity || deal.lastActivity || deal.updated_at || deal.updatedAt || new Date().toISOString(),
+          createdAt: deal.created_at || deal.createdAt || new Date().toISOString()
+        }));
+        setDeals(formattedDeals);
+      } catch (err) {
+        console.error('Failed to fetch deals:', err);
+        setError('Failed to load deals. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDeals();
+  }, []);
+
+  // Add a new deal
+  const handleAddDeal = () => {
+    router.push('/deals/new');
+  };
+
+  // Edit a deal
+  const handleEditDeal = (id: number) => {
+    router.push(`/deals/${id}`);
+  };
+
+  // Delete a deal
+  const handleDeleteDeal = async (id: number) => {
+    if (confirm('Are you sure you want to delete this deal?')) {
+      try {
+        await dealsService.delete(id);
+        setDeals(deals.filter(deal => deal.id !== id));
+      } catch (err) {
+        console.error('Failed to delete deal:', err);
+        setError('Failed to delete deal. Please try again.');
+      }
+    }
+  };
 
   // Function to handle sorting
   const handleSort = (key: string) => {
@@ -168,26 +278,61 @@ export default function DealsPage() {
     setSortConfig({ key, direction });
   };
 
-  // Sort deals based on current sort configuration
-  const sortedDeals = [...MOCK_DEALS].sort((a: any, b: any) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
+  // Sort deals based on current sort configuration with type-safe approach
+  const sortedDeals = [...deals].sort((a: Deal, b: Deal) => {
+    const key = sortConfig.key as keyof Deal;
+    const valueA = a[key] as string | number;
+    const valueB = b[key] as string | number;
+    
+    if (valueA < valueB) {
       return sortConfig.direction === 'asc' ? -1 : 1;
     }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
+    if (valueA > valueB) {
       return sortConfig.direction === 'asc' ? 1 : -1;
     }
     return 0;
   });
 
   // Get total value of all deals
-  const totalDealValue = MOCK_DEALS.reduce((sum, deal) => sum + deal.value, 0);
+  const totalDealValue = deals.reduce((sum: number, deal: Deal) => sum + deal.value, 0);
   
   // Get count of deals by stage
-  const dealsByStage = MOCK_DEALS.reduce((acc: Record<string, number>, deal) => {
+  const dealsByStage = deals.reduce((acc: Record<string, number>, deal: Deal) => {
     acc[deal.stage] = (acc[deal.stage] || 0) + 1;
     return acc;
   }, {});
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="pb-10">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Error state
+  if (error) {
+    return (
+      <div className="pb-10">
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="pb-10">
       <div className="mb-6">
@@ -195,7 +340,7 @@ export default function DealsPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Deals</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Verwalten Sie Ihre Verkaufschancen und verfolgen Sie den Fortschritt.
+              Manage your opportunities and track your sales progress.
             </p>
           </div>
           <div className="mt-4 sm:mt-0 sm:flex sm:space-x-3">
@@ -209,16 +354,18 @@ export default function DealsPage() {
             <button
               type="button"
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              onClick={() => window.location.reload()}
             >
               <ArrowPathIcon className="h-4 w-4 mr-2 text-gray-500" />
-              Aktualisieren
+              Refresh
             </button>
             <button
               type="button"
+              onClick={handleAddDeal}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
-              Deal erstellen
+              Create Deal
             </button>
           </div>
         </div>
@@ -234,9 +381,9 @@ export default function DealsPage() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Offene Deals</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Open Deals</dt>
                   <dd>
-                    <div className="text-lg font-medium text-gray-900">{MOCK_DEALS.length}</div>
+                    <div className="text-lg font-medium text-gray-900">{deals.length}</div>
                   </dd>
                 </dl>
               </div>
@@ -252,7 +399,7 @@ export default function DealsPage() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Gesamtwert</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Total Value</dt>
                   <dd>
                     <div className="text-lg font-medium text-gray-900">{formatCurrency(totalDealValue)}</div>
                   </dd>
@@ -270,7 +417,7 @@ export default function DealsPage() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">In Verhandlung</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">In Negotiation</dt>
                   <dd>
                     <div className="text-lg font-medium text-gray-900">{dealsByStage['negotiation'] || 0}</div>
                   </dd>
@@ -288,10 +435,10 @@ export default function DealsPage() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Ø Abschlussquote</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Avg. Win Rate</dt>
                   <dd>
                     <div className="text-lg font-medium text-gray-900">
-                      {Math.round(MOCK_DEALS.reduce((sum, deal) => sum + deal.probability, 0) / MOCK_DEALS.length)}%
+                      {deals.length > 0 ? Math.round(deals.reduce((sum, deal) => sum + (deal.probability || 0), 0) / deals.length) : 0}%
                     </div>
                   </dd>
                 </dl>
@@ -310,7 +457,7 @@ export default function DealsPage() {
               viewMode === 'list' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Liste
+            List
           </button>
           <button
             onClick={() => setViewMode('kanban')}
@@ -323,15 +470,15 @@ export default function DealsPage() {
         </div>
         
         <div className="flex items-center">
-          <span className="text-sm text-gray-500 mr-2">Sortieren nach:</span>
+          <span className="text-sm text-gray-500 mr-2">Sort by:</span>
           <div className="relative">
             <button
               type="button"
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {sortConfig.key === 'lastActivity' ? 'Letzte Aktivität' : 
-               sortConfig.key === 'value' ? 'Wert' : 
-               sortConfig.key === 'expectedCloseDate' ? 'Abschlussdatum' : 'Name'}
+              {sortConfig.key === 'lastActivity' ? 'Last Activity' : 
+               sortConfig.key === 'value' ? 'Value' : 
+               sortConfig.key === 'expectedCloseDate' ? 'Close Date' : 'Name'}
               <ChevronDownIcon className="ml-2 h-4 w-4" />
             </button>
             {/* Dropdown menu would go here */}
@@ -353,36 +500,36 @@ export default function DealsPage() {
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                         onClick={() => handleSort('title')}
                       >
-                        Deal / Kunde
+                        Deal / Customer
                       </th>
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                         onClick={() => handleSort('value')}
                       >
-                        Wert
+                        Value
                       </th>
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Phase
+                        Stage
                       </th>
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                         onClick={() => handleSort('expectedCloseDate')}
                       >
-                        Abschlussdatum
+                        Close Date
                       </th>
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Zugewiesen an
+                        Assigned To
                       </th>
                       <th scope="col" className="relative px-6 py-3">
-                        <span className="sr-only">Aktionen</span>
+                        <span className="sr-only">Actions</span>
                       </th>
                     </tr>
                   </thead>
@@ -399,7 +546,7 @@ export default function DealsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">{formatCurrency(deal.value)}</div>
-                          <div className="text-xs text-gray-500">{deal.probability}% Wahrscheinlichkeit</div>
+                          <div className="text-xs text-gray-500">{deal.probability}% Probability</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STAGE_COLORS[deal.stage as keyof typeof STAGE_COLORS]}`}>
@@ -407,18 +554,28 @@ export default function DealsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(deal.expectedCloseDate)}
+                          {formatDate(deal.expectedDate)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {deal.assignedTo}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            type="button"
-                            className="text-indigo-600 hover:text-indigo-900 focus:outline-none"
-                          >
-                            <EllipsisHorizontalIcon className="h-5 w-5" />
-                          </button>
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => handleEditDeal(deal.id)}
+                              className="text-indigo-600 hover:text-indigo-900 focus:outline-none"
+                            >
+                              <PencilIcon className="h-5 w-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteDeal(deal.id)}
+                              className="text-red-600 hover:text-red-900 focus:outline-none"
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -437,23 +594,23 @@ export default function DealsPage() {
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium text-gray-700 mb-3 flex items-center">
               <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-              Bedarfsanalyse
+              Discovery
               <span className="ml-2 bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
-                {MOCK_DEALS.filter(d => d.stage === 'discovery').length}
+                {sortedDeals.filter((deal: Deal) => deal.stage === 'discovery').length}
               </span>
             </h3>
             
             <div className="space-y-3">
-              {MOCK_DEALS.filter(deal => deal.stage === 'discovery').map(deal => (
+              {sortedDeals.filter((deal: Deal) => deal.stage === 'discovery').map((deal: Deal) => (
                 <div key={deal.id} className="bg-white p-3 rounded-lg shadow-sm">
                   <h4 className="font-medium text-gray-900 text-sm">{deal.title}</h4>
                   <p className="text-gray-500 text-xs mt-1">{deal.customer}</p>
                   <div className="mt-2 flex justify-between items-center">
                     <span className="text-gray-900 font-medium text-sm">{formatCurrency(deal.value)}</span>
-                    <span className="text-xs text-gray-500">{formatDate(deal.expectedCloseDate)}</span>
+                    <span className="text-xs text-gray-500">{formatDate(deal.expectedDate)}</span>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {deal.tags.map(tag => (
+                    {deal.tags && deal.tags.length > 0 && deal.tags.map((tag: string) => (
                       <DealTag key={tag} text={tag} />
                     ))}
                   </div>
@@ -466,23 +623,23 @@ export default function DealsPage() {
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium text-gray-700 mb-3 flex items-center">
               <span className="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
-              Angebot
+              Proposal
               <span className="ml-2 bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
-                {MOCK_DEALS.filter(d => d.stage === 'proposal').length}
+                {sortedDeals.filter((deal: Deal) => deal.stage === 'proposal').length}
               </span>
             </h3>
             
             <div className="space-y-3">
-              {MOCK_DEALS.filter(deal => deal.stage === 'proposal').map(deal => (
+              {sortedDeals.filter((deal: Deal) => deal.stage === 'proposal').map((deal: Deal) => (
                 <div key={deal.id} className="bg-white p-3 rounded-lg shadow-sm">
                   <h4 className="font-medium text-gray-900 text-sm">{deal.title}</h4>
                   <p className="text-gray-500 text-xs mt-1">{deal.customer}</p>
                   <div className="mt-2 flex justify-between items-center">
                     <span className="text-gray-900 font-medium text-sm">{formatCurrency(deal.value)}</span>
-                    <span className="text-xs text-gray-500">{formatDate(deal.expectedCloseDate)}</span>
+                    <span className="text-xs text-gray-500">{formatDate(deal.expectedDate)}</span>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {deal.tags.map(tag => (
+                    {deal.tags && deal.tags.length > 0 && deal.tags.map((tag: string) => (
                       <DealTag key={tag} text={tag} />
                     ))}
                   </div>
@@ -495,23 +652,23 @@ export default function DealsPage() {
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium text-gray-700 mb-3 flex items-center">
               <span className="w-3 h-3 rounded-full bg-orange-500 mr-2"></span>
-              Verhandlung
+              Negotiation
               <span className="ml-2 bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
-                {MOCK_DEALS.filter(d => d.stage === 'negotiation').length}
+                {sortedDeals.filter((deal: Deal) => deal.stage === 'negotiation').length}
               </span>
             </h3>
             
             <div className="space-y-3">
-              {MOCK_DEALS.filter(deal => deal.stage === 'negotiation').map(deal => (
+              {sortedDeals.filter((deal: Deal) => deal.stage === 'negotiation').map((deal: Deal) => (
                 <div key={deal.id} className="bg-white p-3 rounded-lg shadow-sm">
                   <h4 className="font-medium text-gray-900 text-sm">{deal.title}</h4>
                   <p className="text-gray-500 text-xs mt-1">{deal.customer}</p>
                   <div className="mt-2 flex justify-between items-center">
                     <span className="text-gray-900 font-medium text-sm">{formatCurrency(deal.value)}</span>
-                    <span className="text-xs text-gray-500">{formatDate(deal.expectedCloseDate)}</span>
+                    <span className="text-xs text-gray-500">{formatDate(deal.expectedDate)}</span>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {deal.tags.map(tag => (
+                    {deal.tags && deal.tags.length > 0 && deal.tags.map((tag: string) => (
                       <DealTag key={tag} text={tag} />
                     ))}
                   </div>
@@ -524,23 +681,23 @@ export default function DealsPage() {
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium text-gray-700 mb-3 flex items-center">
               <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-              Abschluss / Gewonnen
+              Closing / Won
               <span className="ml-2 bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
-                {MOCK_DEALS.filter(d => d.stage === 'closing' || d.stage === 'closed_won').length}
+                {sortedDeals.filter((deal: Deal) => deal.stage === 'closing' || deal.stage === 'closed_won' || deal.stage === 'won').length}
               </span>
             </h3>
             
             <div className="space-y-3">
-              {MOCK_DEALS.filter(deal => deal.stage === 'closing' || deal.stage === 'closed_won').map(deal => (
+              {sortedDeals.filter((deal: Deal) => deal.stage === 'closing' || deal.stage === 'closed_won' || deal.stage === 'won').map((deal: Deal) => (
                 <div key={deal.id} className="bg-white p-3 rounded-lg shadow-sm">
                   <h4 className="font-medium text-gray-900 text-sm">{deal.title}</h4>
                   <p className="text-gray-500 text-xs mt-1">{deal.customer}</p>
                   <div className="mt-2 flex justify-between items-center">
                     <span className="text-gray-900 font-medium text-sm">{formatCurrency(deal.value)}</span>
-                    <span className="text-xs text-gray-500">{formatDate(deal.expectedCloseDate)}</span>
+                    <span className="text-xs text-gray-500">{formatDate(deal.expectedDate)}</span>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {deal.tags.map(tag => (
+                    {deal.tags && deal.tags.length > 0 && deal.tags.map((tag: string) => (
                       <DealTag key={tag} text={tag} />
                     ))}
                   </div>

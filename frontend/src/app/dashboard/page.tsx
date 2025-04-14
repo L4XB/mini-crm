@@ -10,6 +10,7 @@ import {
   ExclamationCircleIcon,
   UserGroupIcon
 } from '@heroicons/react/24/outline';
+import { contactsService, dealsService, tasksService } from '@/services/api';
 import {
   ArcElement,
   BarElement,
@@ -58,6 +59,20 @@ export default function Dashboard() {
     name: string;
     amount: number;
     expectedDate: string;
+    status?: 'won' | 'in_progress' | 'lost';
+  }
+
+  interface Task {
+    id: number;
+    title: string;
+    completed: boolean;
+    dueDate?: string;
+    type?: string;
+  }
+  
+  interface Contact {
+    id: number;
+    name: string;
   }
 
   interface DashboardStats {
@@ -85,116 +100,184 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Declare variables outside useEffect to make them accessible to chart functions
+  const [contactsData, setContactsData] = useState<Contact[]>([]);
+  const [dealsData, setDealsData] = useState<Deal[]>([]);
+  const [tasksData, setTasksData] = useState<Task[]>([]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
 
-        // For now, let's use mocked data instead of API calls that would fail
-        const contactsData = Array(15).fill(null).map((_, i) => ({ id: i, name: `Contact ${i}` }));
-        const dealsData = Array(8).fill(null).map((_, i) => ({
-          id: i,
-          name: `Deal ${i}`,
-          amount: Math.round(Math.random() * 10000),
-          expectedDate: new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-        }));
-        const tasksData = Array(12).fill(null).map((_, i) => ({
-          id: i,
-          title: `Task ${i}`,
-          completed: Math.random() > 0.5
-        }));
+        // Load real data from API endpoints
+        const contactsPromise = contactsService.getAll().catch(err => {
+          console.error('Error loading contacts:', err);
+          return [];
+        });
+        
+        const dealsPromise = dealsService.getAll().catch(err => {
+          console.error('Error loading deals:', err);
+          return [];
+        });
+        
+        const tasksPromise = tasksService.getAll().catch(err => {
+          console.error('Error loading tasks:', err);
+          return [];
+        });
+        
+        // Load all data in parallel
+        const [contacts, deals, tasks] = await Promise.all([contactsPromise, dealsPromise, tasksPromise]);
+        
+        // Store data in state
+        setContactsData(contacts);
+        setDealsData(deals);
+        setTasksData(tasks);
 
         // Calculate dashboard stats
-        const pendingTasks = tasksData.filter((task) => !task.completed);
-        const completedTasks = tasksData.filter((task) => task.completed);
-        const totalRevenue = dealsData.reduce((sum, deal) => sum + (deal.amount || 0), 0);
+        const pendingTasks = tasks.filter((task: Task) => !task.completed);
+        const completedTasks = tasks.filter((task: Task) => task.completed);
+        const totalRevenue = deals.reduce((sum: number, deal: Deal) => sum + (deal.amount || 0), 0);
 
         // Get upcoming deals (next 30 days)
         const now = new Date();
         const in30Days = new Date();
         in30Days.setDate(now.getDate() + 30);
 
-        const upcomingDeals = dealsData
-          .filter((deal) => {
+        const upcomingDeals = deals
+          .filter((deal: Deal) => {
+            if (!deal.expectedDate) return false;
             const expectedDate = new Date(deal.expectedDate);
             return expectedDate >= now && expectedDate <= in30Days;
           })
-          .sort((a, b) => new Date(a.expectedDate).getTime() - new Date(b.expectedDate).getTime())
+          .sort((a: Deal, b: Deal) => new Date(a.expectedDate).getTime() - new Date(b.expectedDate).getTime())
           .slice(0, 5);
 
         setStats({
-          contacts: contactsData.length,
-          deals: dealsData.length,
-          tasks: tasksData.length,
-          pendingTasks: pendingTasks.length,
-          completedTasks: completedTasks.length,
-          revenue: totalRevenue,
+          contacts: contacts?.length || 0,
+          deals: deals?.length || 0,
+          tasks: tasks?.length || 0,
+          pendingTasks: pendingTasks?.length || 0,
+          completedTasks: completedTasks?.length || 0,
+          revenue: totalRevenue || 0,
           revenueTarget: 250000,
-          upcomingDeals: upcomingDeals as Deal[]
+          upcomingDeals: upcomingDeals || []
         });
 
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
-        setError('Fehler beim Laden der Dashboard-Daten.');
+        setError('Error loading dashboard data.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
+    // Nur wenn der Benutzer angemeldet ist, Daten abrufen
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchData();
+    } else {
+      setError('Please log in to view dashboard data.');
+      setIsLoading(false);
+    }
   }, []);
 
-  // Dummy data for charts
-  const revenueChartData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
-    datasets: [
-      {
-        label: 'Umsatz 2025',
-        data: [12000, 19000, 16500, 25000, 26000, 35000, 40000, 39000, 28000, 16000, 9000, 15000],
-        borderColor: 'rgb(99, 102, 241)',
-        backgroundColor: 'rgba(99, 102, 241, 0.5)',
-        tension: 0.3,
-      },
-      {
-        label: 'Umsatz 2024',
-        data: [10000, 15000, 12000, 22000, 21000, 28000, 32000, 29000, 24000, 18000, 12000, 10000],
-        borderColor: 'rgb(209, 213, 219)',
-        backgroundColor: 'rgba(209, 213, 219, 0.5)',
-        tension: 0.3,
-      },
-    ],
+  // Revenue data from deals
+  const generateRevenueData = (deals: Deal[] = []) => {
+    // Create an array for each month, initialize with zeros
+    const currentYear = new Date().getFullYear();
+    const monthlyRevenue = Array(12).fill(0);
+    
+    // Sum deal amounts by month
+    deals.forEach(deal => {
+      if (deal.amount && deal.expectedDate) {
+        const date = new Date(deal.expectedDate);
+        if (date.getFullYear() === currentYear) {
+          const month = date.getMonth();
+          monthlyRevenue[month] += deal.amount;
+        }
+      }
+    });
+    
+    return {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      datasets: [
+        {
+          label: `Revenue ${currentYear}`,
+          data: monthlyRevenue,
+          borderColor: 'rgb(99, 102, 241)',
+          backgroundColor: 'rgba(99, 102, 241, 0.5)',
+          tension: 0.3,
+        }
+      ],
+    };
   };
+  
+  const revenueChartData = generateRevenueData(dealsData);
 
-  const dealsStatusData = {
-    labels: ['Gewonnen', 'In Bearbeitung', 'Verloren'],
-    datasets: [
-      {
-        data: [12, 28, 5],
-        backgroundColor: [
-          'rgba(34, 197, 94, 0.8)',
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(239, 68, 68, 0.8)',
-        ],
-        borderColor: [
-          'rgb(34, 197, 94)',
-          'rgb(59, 130, 246)',
-          'rgb(239, 68, 68)',
-        ],
-        borderWidth: 1,
-      },
-    ],
+  // Generate real deal status data
+  const generateDealsStatusData = (deals: Deal[]) => {
+    // Count deals by status
+    let won = 0;
+    let inProgress = 0;
+    let lost = 0;
+    
+    deals.forEach(deal => {
+      if (deal.status === 'won') won++;
+      else if (deal.status === 'lost') lost++;
+      else inProgress++; // Default or in_progress
+    });
+    
+    return {
+      labels: ['Won', 'In Progress', 'Lost'],
+      datasets: [
+        {
+          data: [won, inProgress, lost],
+          backgroundColor: [
+            'rgba(34, 197, 94, 0.8)',
+            'rgba(59, 130, 246, 0.8)',
+            'rgba(239, 68, 68, 0.8)',
+          ],
+          borderColor: [
+            'rgb(34, 197, 94)',
+            'rgb(59, 130, 246)',
+            'rgb(239, 68, 68)',
+          ],
+          borderWidth: 1,
+        },
+      ],
+    };
   };
+  
+  const dealsStatusData = generateDealsStatusData(dealsData);
 
-  const tasksByTypeData = {
-    labels: ['Meeting', 'Anruf', 'E-Mail', 'Präsentation', 'Kundentermin'],
-    datasets: [
-      {
-        label: 'Aufgaben nach Typ',
-        data: [8, 12, 19, 5, 7],
-        backgroundColor: 'rgba(147, 51, 234, 0.7)',
-      },
-    ],
+  // Generate task distribution by type
+  const generateTasksByTypeData = (tasks: Task[]) => {
+    // Count task types
+    const types: Record<string, number> = {};
+    
+    tasks.forEach(task => {
+      const type = task.type || 'Other';
+      types[type] = (types[type] || 0) + 1;
+    });
+    
+    // Convert to arrays for chart
+    const labels = Object.keys(types).length > 0 ? Object.keys(types) : ['No Tasks'];
+    const data = Object.keys(types).length > 0 ? Object.values(types) : [0];
+    
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Tasks by Type',
+          data,
+          backgroundColor: 'rgba(147, 51, 234, 0.7)',
+        },
+      ],
+    };
   };
+  
+  const tasksByTypeData = generateTasksByTypeData(tasksData);
 
   if (isLoading) {
     return (

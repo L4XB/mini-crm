@@ -1,5 +1,10 @@
 import axios from 'axios';
 
+// Debugging-Funktion für API-Anfragen
+const debugFetch = (method: string, url: string, data?: Record<string, unknown>) => {
+  console.log(`API ${method} Request:`, url, data ? { data } : '');
+};
+
 // API-Konfiguration
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -9,6 +14,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000, // 10s Timeout
+  withCredentials: true // Wichtig für CORS mit Credentials
 });
 
 // Request Interceptor für JWT-Token
@@ -62,11 +68,19 @@ api.interceptors.response.use(
 // Auth Services
 export const authService = {
   login: async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
-    return response.data;
+    debugFetch('POST', '/api/v1/auth/login', { email });
+    try {
+      const response = await api.post('/api/v1/auth/login', { email, password });
+      console.log('Login response:', response);
+      return response.data;
+    } catch (error) {
+      console.error('Login error details:', error);
+      throw error;
+    }
   },
   register: async (userData: { email: string; password: string; username: string }) => {
-    const response = await api.post('/auth/register', userData);
+    debugFetch('POST', '/api/v1/auth/register', { email: userData.email });
+    const response = await api.post('/api/v1/auth/register', userData);
     return response.data;
   },
   logout: () => {
@@ -75,7 +89,8 @@ export const authService = {
     localStorage.removeItem('user');
   },
   refreshToken: async (refreshToken: string) => {
-    const response = await api.post('/auth/refresh', { refresh_token: refreshToken });
+    debugFetch('POST', '/api/v1/auth/refresh', { refresh_token: refreshToken });
+    const response = await api.post('/api/v1/auth/refresh', { refresh_token: refreshToken });
     return response.data;
   },
   getCurrentUser: () => {
@@ -91,23 +106,33 @@ export const authService = {
 // Contacts Services
 export const contactsService = {
   getAll: async () => {
-    const response = await api.get('/contacts');
-    return response.data;
+    debugFetch('GET', '/api/v1/contacts');
+    try {
+      const response = await api.get('/api/v1/contacts');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      return [];
+    }
   },
   get: async (id: number) => {
-    const response = await api.get(`/contacts/${id}`);
-    return response.data;
+    debugFetch('GET', `/api/v1/contacts/${id}`);
+    const response = await api.get(`/api/v1/contacts/${id}`);
+    return response.data.data;
   },
-  create: async (data: any) => {
-    const response = await api.post('/contacts', data);
-    return response.data;
+  create: async (data: Record<string, unknown>) => {
+    debugFetch('POST', '/api/v1/contacts', data);
+    const response = await api.post('/api/v1/contacts', data);
+    return response.data.data;
   },
-  update: async (id: number, data: any) => {
-    const response = await api.put(`/contacts/${id}`, data);
-    return response.data;
+  update: async (id: number, data: Record<string, unknown>) => {
+    debugFetch('PUT', `/api/v1/contacts/${id}`, data);
+    const response = await api.put(`/api/v1/contacts/${id}`, data);
+    return response.data.data;
   },
   delete: async (id: number) => {
-    const response = await api.delete(`/contacts/${id}`);
+    debugFetch('DELETE', `/api/v1/contacts/${id}`);
+    const response = await api.delete(`/api/v1/contacts/${id}`);
     return response.data;
   }
 };
@@ -115,23 +140,33 @@ export const contactsService = {
 // Deals Services
 export const dealsService = {
   getAll: async () => {
-    const response = await api.get('/deals');
-    return response.data;
+    debugFetch('GET', '/api/v1/deals');
+    try {
+      const response = await api.get('/api/v1/deals');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Error fetching deals:', error);
+      return [];
+    }
   },
   get: async (id: number) => {
-    const response = await api.get(`/deals/${id}`);
-    return response.data;
+    debugFetch('GET', `/api/v1/deals/${id}`);
+    const response = await api.get(`/api/v1/deals/${id}`);
+    return response.data.data;
   },
-  create: async (data: any) => {
-    const response = await api.post('/deals', data);
-    return response.data;
+  create: async (data: Record<string, unknown>) => {
+    debugFetch('POST', '/api/v1/deals', data);
+    const response = await api.post('/api/v1/deals', data);
+    return response.data.data;
   },
-  update: async (id: number, data: any) => {
-    const response = await api.put(`/deals/${id}`, data);
-    return response.data;
+  update: async (id: number, data: Record<string, unknown>) => {
+    debugFetch('PUT', `/api/v1/deals/${id}`, data);
+    const response = await api.put(`/api/v1/deals/${id}`, data);
+    return response.data.data;
   },
   delete: async (id: number) => {
-    const response = await api.delete(`/deals/${id}`);
+    debugFetch('DELETE', `/api/v1/deals/${id}`);
+    const response = await api.delete(`/api/v1/deals/${id}`);
     return response.data;
   }
 };
@@ -139,51 +174,72 @@ export const dealsService = {
 // Tasks Services
 export const tasksService = {
   getAll: async () => {
-    const response = await api.get('/tasks');
-    return response.data;
+    debugFetch('GET', '/api/v1/tasks');
+    try {
+      const response = await api.get('/api/v1/tasks');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      return [];
+    }
   },
   get: async (id: number) => {
-    const response = await api.get(`/tasks/${id}`);
-    return response.data;
+    debugFetch('GET', `/api/v1/tasks/${id}`);
+    const response = await api.get(`/api/v1/tasks/${id}`);
+    return response.data.data;
   },
-  create: async (data: any) => {
-    const response = await api.post('/tasks', data);
-    return response.data;
+  create: async (data: Record<string, unknown>) => {
+    debugFetch('POST', '/api/v1/tasks', data);
+    const response = await api.post('/api/v1/tasks', data);
+    return response.data.data;
   },
-  update: async (id: number, data: any) => {
-    const response = await api.put(`/tasks/${id}`, data);
-    return response.data;
+  update: async (id: number, data: Record<string, unknown>) => {
+    debugFetch('PUT', `/api/v1/tasks/${id}`, data);
+    const response = await api.put(`/api/v1/tasks/${id}`, data);
+    return response.data.data;
   },
   delete: async (id: number) => {
-    const response = await api.delete(`/tasks/${id}`);
+    debugFetch('DELETE', `/api/v1/tasks/${id}`);
+    const response = await api.delete(`/api/v1/tasks/${id}`);
     return response.data;
   },
   toggleComplete: async (id: number) => {
-    const response = await api.patch(`/tasks/${id}/toggle`);
-    return response.data;
+    debugFetch('PATCH', `/api/v1/tasks/${id}/toggle`);
+    const response = await api.patch(`/api/v1/tasks/${id}/toggle`);
+    return response.data.data;
   }
 };
 
 // Notes Services
 export const notesService = {
   getAll: async () => {
-    const response = await api.get('/notes');
-    return response.data;
+    debugFetch('GET', '/api/v1/notes');
+    try {
+      const response = await api.get('/api/v1/notes');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+      return [];
+    }
   },
   get: async (id: number) => {
-    const response = await api.get(`/notes/${id}`);
-    return response.data;
+    debugFetch('GET', `/api/v1/notes/${id}`);
+    const response = await api.get(`/api/v1/notes/${id}`);
+    return response.data.data;
   },
-  create: async (data: any) => {
-    const response = await api.post('/notes', data);
-    return response.data;
+  create: async (data: Record<string, unknown>) => {
+    debugFetch('POST', '/api/v1/notes', data);
+    const response = await api.post('/api/v1/notes', data);
+    return response.data.data;
   },
-  update: async (id: number, data: any) => {
-    const response = await api.put(`/notes/${id}`, data);
-    return response.data;
+  update: async (id: number, data: Record<string, unknown>) => {
+    debugFetch('PUT', `/api/v1/notes/${id}`, data);
+    const response = await api.put(`/api/v1/notes/${id}`, data);
+    return response.data.data;
   },
   delete: async (id: number) => {
-    const response = await api.delete(`/notes/${id}`);
+    debugFetch('DELETE', `/api/v1/notes/${id}`);
+    const response = await api.delete(`/api/v1/notes/${id}`);
     return response.data;
   }
 };
@@ -191,19 +247,23 @@ export const notesService = {
 // Health und Metrics Services
 export const systemService = {
   getHealth: async () => {
-    const response = await api.get('/health');
+    debugFetch('GET', '/api/v1/health');
+    const response = await api.get('/api/v1/health');
     return response.data;
   },
   getDetailedHealth: async () => {
-    const response = await api.get('/health?detailed=true');
+    debugFetch('GET', '/api/v1/health?detailed=true');
+    const response = await api.get('/api/v1/health?detailed=true');
     return response.data;
   },
   getMetrics: async () => {
-    const response = await api.get('/metrics');
+    debugFetch('GET', '/api/v1/metrics');
+    const response = await api.get('/api/v1/metrics');
     return response.data;
   },
   getReadiness: async () => {
-    const response = await api.get('/ready');
+    debugFetch('GET', '/api/v1/ready');
+    const response = await api.get('/api/v1/ready');
     return response.data;
   }
 };

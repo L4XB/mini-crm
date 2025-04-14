@@ -15,76 +15,7 @@ import {
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import notificationService from '@/services/notificationService';
-
-// Mock contact data
-const MOCK_CONTACTS: Contact[] = [
-  {
-    id: 1,
-    name: 'Max Mustermann',
-    email: 'max.mustermann@example.com',
-    phone: '+49 123 4567890',
-    position: 'Geschäftsführer',
-    company: 'Musterfirma GmbH',
-    contactStage: 'customer',
-    notes: 'Langjähriger Kunde mit Interesse an neuen Produkten.',
-    tags: ['VIP', 'Langzeit']
-  },
-  {
-    id: 2,
-    name: 'Anna Schmidt',
-    email: 'anna.schmidt@example.com',
-    phone: '+49 987 6543210',
-    position: 'Marketing Direktorin',
-    company: 'Marketing AG',
-    contactStage: 'lead',
-    notes: 'Interesse an Marketing-Automation geäußert.',
-    tags: ['Neu', 'Marketing']
-  },
-  {
-    id: 3,
-    name: 'Thomas Weber',
-    email: 'thomas.weber@example.com',
-    phone: '+49 234 5678901',
-    position: 'IT-Leiter',
-    company: 'Tech Solutions GmbH',
-    contactStage: 'prospect',
-    notes: 'Braucht ein Angebot für IT-Infrastruktur.',
-    tags: ['IT', 'Dringend']
-  },
-  {
-    id: 4,
-    name: 'Laura Müller',
-    email: 'laura.mueller@example.com',
-    phone: '+49 345 6789012',
-    position: 'Vertriebsleiterin',
-    company: 'Vertrieb & Co KG',
-    contactStage: 'customer',
-    notes: 'Monatlicher Check-in vereinbart.',
-    tags: ['Vertrieb', 'Wichtig']
-  },
-  {
-    id: 5,
-    name: 'Michael Klein',
-    email: 'michael.klein@example.com',
-    phone: '+49 456 7890123',
-    position: 'Finanzdirektor',
-    company: 'Finanzwesen AG',
-    contactStage: 'inactive',
-    notes: 'Seit 3 Monaten kein Kontakt.',
-    tags: ['Finanzen']
-  },
-  {
-    id: 6,
-    name: 'Sophie Wagner',
-    email: 'sophie.wagner@example.com',
-    phone: '+49 567 8901234',
-    position: 'HR Managerin',
-    company: 'Personal GmbH',
-    contactStage: 'prospect',
-    notes: 'Interesse an HR-Management-Systemen.',
-    tags: ['HR', 'Software']
-  },
-];
+import { contactsService } from '@/services/api';
 
 // Helper function to generate avatar color from name
 const generateAvatarColor = (name: string) => {
@@ -106,20 +37,34 @@ const getInitials = (name: string) => {
 };
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Demo-Benachrichtigung beim Laden der Seite
+  // Lade Kontakte von der API beim ersten Rendern
   useEffect(() => {
-    // Zeigt beim ersten Laden eine Benachrichtigung an
-    if (contacts.length > 0) {
-      notificationService.info(
-        `${contacts.length} Kontakte geladen`, 
-        { autoClose: 3000 }
-      );
-    }
-  }, [contacts.length]); // contacts.length als Abhängigkeit hinzugefügt
+    const fetchContacts = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await contactsService.getAll();
+        setContacts(data);
+        // Zeige Erfolgsbenachrichtigung an
+        notificationService.info(
+          `${data.length} Kontakte geladen`, 
+          { autoClose: 3000 }
+        );
+      } catch (err) {
+        console.error('Fehler beim Laden der Kontakte:', err);
+        setError('Die Kontakte konnten nicht geladen werden. Bitte versuchen Sie es später erneut.');
+        notificationService.error('Fehler beim Laden der Kontakte');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchContacts();
+  }, []);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [showFilterMenu, setShowFilterMenu] = useState<boolean>(false);
@@ -133,23 +78,23 @@ export default function ContactsPage() {
     { value: 'inactive', label: 'Inaktiv' },
   ];
 
-  const handleDeleteContact = (id: number) => {
+  const handleDeleteContact = async (id: number) => {
     if (window.confirm('Sind Sie sicher, dass Sie diesen Kontakt löschen möchten?')) {
       try {
-        // In einer echten Anwendung würde hier ein API-Aufruf erfolgen
         const loadingToastId = notificationService.loading('Kontakt wird gelöscht...');
         
-        // Simuliere API-Verzögerung
-        setTimeout(() => {
-          setContacts(contacts.filter(contact => contact.id !== id));
-          
-          // Erfolgsbenachrichtigung anzeigen
-          notificationService.update(
-            loadingToastId, 
-            'Kontakt erfolgreich gelöscht', 
-            'success'
-          );
-        }, 500); // 500ms Verzögerung zur Simulation
+        // Echten API-Aufruf verwenden
+        await contactsService.delete(id);
+        
+        // UI nach erfolgreicher Löschung aktualisieren
+        setContacts(contacts.filter(contact => contact.id !== id));
+        
+        // Erfolgsbenachrichtigung anzeigen
+        notificationService.update(
+          loadingToastId, 
+          'Kontakt erfolgreich gelöscht', 
+          'success'
+        );
       } catch (err) {
         console.error('Error deleting contact:', err);
         setError('Fehler beim Löschen des Kontakts.');

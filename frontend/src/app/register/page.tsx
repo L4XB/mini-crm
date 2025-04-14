@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
-import { mockAuthService } from '@/services/mockAuth';
+import { authService } from '@/services/api';
 
 interface RegisterFormData {
   username: string;
@@ -73,9 +73,9 @@ export default function RegisterPage() {
     console.log('Versuche Registrierung mit:', { ...userData, password: '***' });
 
     try {
-      // Verwende den Mock-Authentifizierungsdienst
-      console.log('Versuche Registrierung mit Mock-Service...');
-      const responseData = await mockAuthService.register(userData);
+      // Verwende den echten API-Service
+      console.log('Versuche Registrierung mit echtem API-Service...');
+      const responseData = await authService.register(userData);
       console.log('Registrierungsantwort:', responseData);
       
       setSuccess("Registrierung erfolgreich! Sie können sich jetzt anmelden.");
