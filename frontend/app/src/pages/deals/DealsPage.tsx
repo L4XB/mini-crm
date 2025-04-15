@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { api } from '../../services/api';
+import { api, getData } from '../../services/api';
 import { Deal } from '../../types/Deal';
 import { 
   PlusIcon,
@@ -32,8 +32,7 @@ const DealsPage: React.FC = () => {
   
   // Fetch deals
   const { data: deals = [], isLoading, isError } = useQuery<Deal[]>('deals', async () => {
-    const response = await api.get('/api/v1/deals');
-    return response.data;
+    return await getData<Deal[]>('/api/v1/deals');
   });
 
   // Delete deal mutation

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import { api } from '../../services/api';
+import { api, getData } from '../../services/api';
 import { motion } from 'framer-motion';
 import { 
   UserGroupIcon, 
@@ -45,37 +45,19 @@ const Dashboard: React.FC = () => {
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
 
   // Fetch contacts
-  const { data: contactsResponse = { data: [] } } = useQuery('contacts', async () => {
-    const response = await api.get('/api/v1/contacts');
-    return response.data;
+  const { data: contacts = [] } = useQuery<Contact[]>('contacts', async () => {
+    return await getData<Contact[]>('/api/v1/contacts');
   });
-  
-  // Stelle sicher, dass contacts ein Array ist
-  const contacts = Array.isArray(contactsResponse) ? contactsResponse : 
-                  contactsResponse.data ? contactsResponse.data : 
-                  contactsResponse.contacts ? contactsResponse.contacts : [];
 
   // Fetch deals
-  const { data: dealsResponse = { data: [] } } = useQuery('deals', async () => {
-    const response = await api.get('/api/v1/deals');
-    return response.data;
+  const { data: deals = [] } = useQuery<Deal[]>('deals', async () => {
+    return await getData<Deal[]>('/api/v1/deals');
   });
-  
-  // Stelle sicher, dass deals ein Array ist
-  const deals = Array.isArray(dealsResponse) ? dealsResponse : 
-               dealsResponse.data ? dealsResponse.data : 
-               dealsResponse.deals ? dealsResponse.deals : [];
 
   // Fetch tasks
-  const { data: tasksResponse = { data: [] } } = useQuery('tasks', async () => {
-    const response = await api.get('/api/v1/tasks');
-    return response.data;
+  const { data: tasks = [] } = useQuery<Task[]>('tasks', async () => {
+    return await getData<Task[]>('/api/v1/tasks');
   });
-  
-  // Stelle sicher, dass tasks ein Array ist
-  const tasks = Array.isArray(tasksResponse) ? tasksResponse : 
-               tasksResponse.data ? tasksResponse.data : 
-               tasksResponse.tasks ? tasksResponse.tasks : [];
 
   // Calculate statistics
   const totalContacts = contacts.length;

@@ -12,6 +12,32 @@ export const api = axios.create({
   withCredentials: true
 });
 
+/**
+ * Standardfunktion zum Verarbeiten der Backend-Antworten, die dem Format
+ * { status: 'success', message: '...', data: [...] } entsprechen
+ */
+export const parseResponse = <T>(response: any): T => {
+  // Wenn keine Daten zurückgegeben werden
+  if (!response) return [] as unknown as T;
+  
+  // Wenn direkt ein Array zurückgegeben wird (unwahrscheinlich)
+  if (Array.isArray(response)) return response as unknown as T;
+  
+  // Backend gibt strukturierte Antwort zurück: { status, message, data }
+  if (response.data !== undefined) return response.data as T;
+  
+  // Fallback, falls anderes Format
+  return response as T;
+};
+
+/**
+ * Erweiterter GET-Request mit korrekter Datenextraktion
+ */
+export const getData = async <T>(url: string): Promise<T> => {
+  const response = await api.get(url);
+  return parseResponse<T>(response.data);
+};
+
 // Keine Pfadkorrektur mehr notwendig, da alle Pfade mit '/api/v1/' beginnen
 
 // Add request interceptor for authentication with logging

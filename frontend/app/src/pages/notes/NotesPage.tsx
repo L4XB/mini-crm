@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Link } from 'react-router-dom';
-import { api } from '../../services/api';
+import { api, getData } from '../../services/api';
 import { Note } from '../../types/Note';
 import { Contact } from '../../types/Contact';
 import { 
@@ -37,8 +37,8 @@ const NotesPage: React.FC = () => {
 
   // Fetch contacts for the create modal
   const { data: contacts = [] } = useQuery<Contact[]>('contacts', async () => {
-    const response = await api.get('/api/v1/contacts');
-    return response.data;
+    // Verwendet die neue getData-Funktion, die das Backend-Antwortformat korrekt verarbeitet
+    return await getData<Contact[]>('/api/v1/contacts');
   });
 
   // Delete note mutation

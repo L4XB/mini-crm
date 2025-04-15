@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { api } from '../../services/api';
+import { api, getData } from '../../services/api';
 import { Task } from '../../types/Task';
 import { Deal } from '../../types/Deal';
 import { 
@@ -34,14 +34,12 @@ const TasksPage: React.FC = () => {
   
   // Fetch tasks
   const { data: tasks = [], isLoading, isError } = useQuery<Task[]>('tasks', async () => {
-    const response = await api.get('/api/v1/tasks');
-    return response.data;
+    return await getData<Task[]>('/api/v1/tasks');
   });
 
   // Fetch deals for association
   const { data: deals = [] } = useQuery<Deal[]>('deals', async () => {
-    const response = await api.get('/api/v1/deals');
-    return response.data;
+    return await getData<Deal[]>('/api/v1/deals');
   });
 
   // Delete task mutation

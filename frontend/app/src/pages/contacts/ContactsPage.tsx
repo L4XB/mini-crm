@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { api } from '../../services/api';
+import { api, getData } from '../../services/api';
 import { Contact, ContactFormData } from '../../types/Contact';
 import { 
   UserPlusIcon,
@@ -30,8 +30,7 @@ const ContactsPage: React.FC = () => {
   
   // Fetch contacts
   const { data: contacts = [], isLoading, isError } = useQuery<Contact[]>('contacts', async () => {
-    const response = await api.get('/api/v1/contacts');
-    return response.data;
+    return await getData<Contact[]>('/api/v1/contacts');
   });
 
   // Delete contact mutation
