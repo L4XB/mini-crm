@@ -56,8 +56,18 @@ const ContactModal: React.FC<ContactModalProps> = ({
 
   const createContactMutation = useMutation(
     async (data: ContactFormData) => {
-      console.log('Erstelle Kontakt:', data);
-      return await api.post('/api/v1/contacts', data);
+      // Stelle sicher, dass die Daten genau dem Backend-Model entsprechen
+      const contactData = {
+        first_name: data.first_name.trim(),
+        last_name: data.last_name.trim(),
+        email: data.email.trim(),
+        phone: data.phone?.trim() || '',
+        position: data.position?.trim() || '',
+        company: data.company?.trim() || '',
+        contact_stage: data.contact_stage
+      };
+      console.log('Erstelle Kontakt:', contactData);
+      return await api.post('/api/v1/contacts', contactData);
     },
     {
       onSuccess: () => {
@@ -81,8 +91,20 @@ const ContactModal: React.FC<ContactModalProps> = ({
       if (!contact?.id) {
         throw new Error('Keine Kontakt-ID vorhanden');
       }
-      console.log('Aktualisiere Kontakt:', contact.id, data);
-      return await api.put(`/api/v1/contacts/${contact.id}`, data);
+      
+      // Stelle sicher, dass die Daten genau dem Backend-Model entsprechen
+      const contactData = {
+        first_name: data.first_name.trim(),
+        last_name: data.last_name.trim(),
+        email: data.email.trim(),
+        phone: data.phone?.trim() || '',
+        position: data.position?.trim() || '',
+        company: data.company?.trim() || '',
+        contact_stage: data.contact_stage
+      };
+      
+      console.log('Aktualisiere Kontakt:', contact.id, contactData);
+      return await api.put(`/api/v1/contacts/${contact.id}`, contactData);
     },
     {
       onSuccess: () => {
@@ -109,6 +131,19 @@ const ContactModal: React.FC<ContactModalProps> = ({
 
   const handleSubmit = async (values: ContactFormData) => {
     try {
+      // Validierung der Pflichtfelder
+      if (!values.first_name || !values.last_name || !values.email || !values.contact_stage) {
+        toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+        return;
+      }
+
+      // Prüfe, ob die E-Mail-Adresse gültig ist
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(values.email)) {
+        toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+        return;
+      }
+
       // Trimme alle String-Werte
       const trimmedValues: ContactFormData = {
         ...values,
@@ -121,7 +156,13 @@ const ContactModal: React.FC<ContactModalProps> = ({
         contact_stage: values.contact_stage
       };
       
-      // Führe die entsprechende Mutation aus
+      // Führe die entsprechende Mutation aus, mit Debug-Ausgabe für bessere Fehlerdiagnose
+      console.log('Sende Kontaktdaten:', trimmedValues);
+      console.log('Kontakt-Daten entsprechen dem Backend-Modell:', 
+                 'first_name' in trimmedValues && 
+                 'last_name' in trimmedValues && 
+                 'email' in trimmedValues);
+      
       if (isEditing) {
         updateContactMutation.mutate(trimmedValues);
       } else {

@@ -28,6 +28,9 @@ interface PasswordFormValues {
 interface AppSettingsFormValues {
   theme: string;
   language: string;
+  notifications_enabled?: boolean;
+  date_format?: string;
+  currency?: string;
 }
 
 const SettingsPage: React.FC = () => {
@@ -89,14 +92,36 @@ const SettingsPage: React.FC = () => {
 
   // Update app settings mutation
   const updateSettingsMutation = useMutation(
-    (values: AppSettingsFormValues) => {
-      // Prüfen, ob Einstellungen bereits existieren
-      if (settingsError) {
-        // Wenn nicht, POST verwenden, um neue Einstellungen zu erstellen
-        return api.post(`/api/v1/users/${user?.id}/settings`, values);
+    async (values: AppSettingsFormValues) => {
+      if (!user?.id) {
+        throw new Error('Kein Benutzer angemeldet');
       }
-      // Andernfalls PUT verwenden, um bestehende Einstellungen zu aktualisieren
-      return api.put(`/api/v1/users/${user?.id}/settings`, values);
+      
+      try {
+        // Stellen wir sicher, dass die Daten dem erwarteten Format entsprechen
+        const settingsData = {
+          theme: values.theme,
+          language: values.language
+        };
+
+        console.log('Sende Einstellungsdaten:', settingsData);
+        
+        // Schaue zuerst, ob Einstellungen existieren
+        const checkSettings = await api.get(`/api/v1/users/${user.id}/settings`).catch(() => null);
+        
+        if (!checkSettings || !checkSettings.data) {
+          console.log('Erstelle neue Einstellungen für Benutzer:', user.id);
+          // Wenn keine Einstellungen existieren, POST verwenden
+          return await api.post(`/api/v1/users/${user.id}/settings`, settingsData);
+        } else {
+          console.log('Aktualisiere bestehende Einstellungen für Benutzer:', user.id);
+          // Andernfalls PUT verwenden
+          return await api.put(`/api/v1/users/${user.id}/settings`, settingsData);
+        }
+      } catch (error) {
+        console.error('Fehler bei Einstellungen:', error);
+        throw error;
+      }
     },
     {
       onSuccess: () => {
@@ -104,8 +129,26 @@ const SettingsPage: React.FC = () => {
         toast.success('Einstellungen erfolgreich aktualisiert');
       },
       onError: (error: any) => {
+        console.error('Fehler beim Aktualisieren der Einstellungen:', error);
         const message = error.response?.data?.error || 'Fehler beim Aktualisieren der Einstellungen';
         toast.error(message);
+        
+        // Wenn die Einstellungen nicht existieren, versuche sie mit einem Standard-Payload zu erstellen
+        if (error.response?.status === 404 || message.includes('not found')) {
+          console.log('Versuche Standard-Einstellungen zu erstellen...');
+          api.post(`/api/v1/users/${user?.id}/settings`, {
+            theme: 'light',
+            language: 'de'
+          })
+          .then(() => {
+            toast.success('Standard-Einstellungen wurden erstellt');
+            queryClient.invalidateQueries(['settings', user?.id]);
+          })
+          .catch(err => {
+            console.error('Fehler beim Erstellen der Standard-Einstellungen:', err);
+            toast.error('Konnte keine Standard-Einstellungen erstellen');
+          });
+        }
       }
     }
   );
@@ -155,14 +198,29 @@ const SettingsPage: React.FC = () => {
 
   // Prüfe, ob Standardeinstellungen erstellt werden müssen
   React.useEffect(() => {
-    // Wenn der Benutzer angemeldet ist und ein Einstellungsfehler auftritt
-    if (user && settingsError) {
-      // Erstelle Standardeinstellungen
-      updateSettingsMutation.mutate({
-        theme: 'light',
-        language: 'de'
-      });
-    }
+    const createDefaultSettings = async () => {
+      // Nur, wenn der Benutzer angemeldet ist
+      if (user?.id) {
+        try {
+          // Versuche, die Einstellungen abzurufen
+          const settingsExist = await api.get(`/api/v1/users/${user.id}/settings`).catch(() => null);
+          
+          // Wenn keine Einstellungen existieren oder ein Fehler aufgetreten ist
+          if (!settingsExist || settingsError) {
+            console.log('Erstelle Standardeinstellungen für Benutzer:', user.id);
+            // Erstelle Standardeinstellungen
+            updateSettingsMutation.mutate({
+              theme: 'light',
+              language: 'de'
+            });
+          }
+        } catch (error) {
+          console.error('Fehler beim Prüfen der Einstellungen:', error);
+        }
+      }
+    };
+    
+    createDefaultSettings();
   }, [user, settingsError, updateSettingsMutation]);
 
   // Validation schema for app settings form

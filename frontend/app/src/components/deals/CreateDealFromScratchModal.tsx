@@ -2,17 +2,13 @@ import React, { useState } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { api } from '../../services/api';
+import { api, getData } from '../../services/api';
 import { Contact } from '../../types/Contact';
 import { DealFormData } from '../../types/Deal';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import { format } from 'date-fns';
-import { 
-  MagnifyingGlassIcon, 
-  ExclamationCircleIcon,
-  UserPlusIcon 
-} from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 interface CreateDealFromScratchModalProps {
   isOpen: boolean;
@@ -29,20 +25,27 @@ const CreateDealFromScratchModal: React.FC<CreateDealFromScratchModalProps> = ({
   tomorrow.setDate(tomorrow.getDate() + 30); // Default expected date is 30 days from now
 
   // Fetch contacts for selection
-  const { data: contacts = [], isLoading: isLoadingContacts } = useQuery<Contact[]>(
+  const { data: contactsData, isLoading: isLoadingContacts } = useQuery<Contact[]>(
     'contacts',
     async () => {
-      const response = await api.get('/api/v1/contacts');
-      return response.data;
+      try {
+        return await getData<Contact[]>('/api/v1/contacts');
+      } catch (error) {
+        console.error('Fehler beim Laden der Kontakte:', error);
+        return [];
+      }
     },
     { enabled: isOpen } // Only fetch contacts when modal is open
   );
+  
+  // Stelle sicher, dass contacts immer ein Array ist
+  const contacts = Array.isArray(contactsData) ? contactsData : [];
 
   // Filter contacts based on search term
   const filteredContacts = contacts.filter(contact =>
-    `${contact.first_name} ${contact.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.company?.toLowerCase().includes(searchTerm.toLowerCase())
+    `${contact?.first_name || ''} ${contact?.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (contact?.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (contact?.company || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const initialValues: DealFormData & { contact_id_selection: string } = {

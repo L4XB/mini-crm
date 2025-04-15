@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { api, getData } from '../../services/api';
@@ -39,6 +39,32 @@ const UserDetailPage: React.FC = () => {
   // Validate user ID
   const userId = id ? parseInt(id) : 0;
   const isValidId = !isNaN(userId) && userId > 0;
+  
+  // Wenn keine gültige ID übergeben wurde, zum Dashboard umleiten
+  useEffect(() => {
+    if (!id || id === 'undefined' || !isValidId) {
+      console.error('Ungültige Benutzer-ID erkannt:', id);
+      toast.error('Ungültige Benutzer-ID');
+      navigate('/users');
+      return;
+    }
+    
+    // Prüfe, ob der Benutzer existiert
+    const checkUserExists = async () => {
+      try {
+        const response = await api.get(`/api/v1/users/${userId}`);
+        if (!response.data) {
+          throw new Error('Benutzer nicht gefunden');
+        }
+      } catch (error) {
+        console.error('Fehler beim Prüfen der Benutzer-ID:', error);
+        toast.error('Benutzer nicht gefunden');
+        navigate('/users');
+      }
+    };
+    
+    checkUserExists();
+  }, [id, isValidId, navigate, userId]);
 
   // Fetch user details
   const { 
@@ -52,11 +78,23 @@ const UserDetailPage: React.FC = () => {
       if (!isValidId) {
         throw new Error('Ungültige Benutzer-ID');
       }
-      return await getData<User>(`/api/v1/users/${userId}`);
+      try {
+        console.log('Loading user data for ID:', userId);
+        const userData = await getData<User>(`/api/v1/users/${userId}`);
+        if (!userData) throw new Error('Benutzer nicht gefunden');
+        return userData;
+      } catch (error) {
+        console.error('Fehler beim Laden des Benutzers:', error);
+        toast.error('Benutzer konnte nicht geladen werden');
+        throw error;
+      }
     },
     {
-      enabled: !!id,
-      retry: false,
+      enabled: isValidId,
+      retry: 1,
+      onError: () => {
+        navigate('/users');
+      }
     }
   );
 

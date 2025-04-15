@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+import { Toaster } from 'react-hot-toast';
 
 // Layout Components
 import DashboardLayout from './components/layouts/DashboardLayout';
@@ -9,6 +10,9 @@ import AuthLayout from './components/layouts/AuthLayout';
 // Auth Pages
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+
+// Public Pages
+import LandingPage from './pages/LandingPage';
 
 // Dashboard Pages
 import Dashboard from './pages/dashboard/Dashboard';
@@ -35,15 +39,19 @@ const App: React.FC = () => {
   }
 
   return (
-    <Routes>
-      {/* Public routes - accessible when not logged in */}
-      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+    <>
+      {/* Toast-Benachrichtigungen */}
+      <Toaster position="top-right" />
       
-      {/* Authentication routes */}
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
-        <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
-      </Route>
+      <Routes>
+        {/* Public routes - accessible when not logged in */}
+        <Route path="/" element={<LandingPage />} />
+        
+        {/* Authentication routes */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+          <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+        </Route>
 
       {/* Protected routes - require authentication */}
       <Route element={<DashboardLayout />}>
@@ -74,6 +82,7 @@ const App: React.FC = () => {
       {/* 404 Not Found */}
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </>
   );
 };
 

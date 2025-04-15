@@ -29,8 +29,18 @@ const UserModal = ({ isOpen, onClose, user, isEditing }: UserModalProps): JSX.El
 
   // Create user mutation
   const createUserMutation = useMutation(
-    (values: Omit<UserFormValues, 'confirmPassword'>) => 
-      api.post('/api/v1/users', values),
+    (values: Omit<UserFormValues, 'confirmPassword'>) => {
+      // Stelle sicher, dass die erforderlichen Felder für Settings vorhanden sind
+      const userData = {
+        ...values,
+        settings: {
+          theme: 'light',
+          language: 'de'
+        }
+      };
+      console.log('Erstelle Benutzer:', userData);
+      return api.post('/api/v1/users', userData);
+    },
     {
       onSuccess: () => {
         queryClient.invalidateQueries('users');
@@ -112,21 +122,40 @@ const UserModal = ({ isOpen, onClose, user, isEditing }: UserModalProps): JSX.El
 
   // Handle form submission
   const handleSubmit = (values: UserFormValues) => {
-    // Remove confirmPassword as it's not needed for the API
-    const { confirmPassword, ...apiValues } = values;
-
-    if (isEditing) {
-      // Wenn wir im Bearbeitungsmodus sind und kein Passwort gesetzt wurde, entfernen wir das Feld
-      if (!apiValues.password) {
-        const { password, ...rest } = apiValues;
-        updateUserMutation.mutate(rest);
+    try {
+      // Validiere und bereinige die Eingabedaten
+      const cleanedValues = {
+        ...values,
+        username: values.username.trim(),
+        email: values.email.trim(),
+        role: values.role || 'user'
+      };
+      
+      // Remove confirmPassword as it's not needed for the API
+      const { confirmPassword, ...apiValues } = cleanedValues;
+      
+      if (isEditing) {
+        // Wenn wir im Bearbeitungsmodus sind und kein Passwort gesetzt wurde, entfernen wir das Feld
+        if (!apiValues.password) {
+          const { password, ...rest } = apiValues;
+          updateUserMutation.mutate(rest);
+        } else {
+          // Sonst verwenden wir alle Felder einschließlich Passwort
+          updateUserMutation.mutate(apiValues);
+        }
       } else {
-        // Sonst verwenden wir alle Felder einschließlich Passwort
-        updateUserMutation.mutate(apiValues);
+        // Bei der Erstellung eines neuen Benutzers validieren wir die Pflichtwerte nochmal
+        if (!apiValues.username || !apiValues.email || !apiValues.password) {
+          toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+          return;
+        }
+        
+        // Bei der Erstellung eines neuen Benutzers müssen wir immer das Passwort mitgeben
+        createUserMutation.mutate(apiValues);
       }
-    } else {
-      // Bei der Erstellung eines neuen Benutzers müssen wir immer das Passwort mitgeben
-      createUserMutation.mutate(apiValues);
+    } catch (error) {
+      console.error('Fehler beim Verarbeiten des Formulars:', error);
+      toast.error('Ein unerwarteter Fehler ist aufgetreten');
     }
   };
 

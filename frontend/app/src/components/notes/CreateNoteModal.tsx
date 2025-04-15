@@ -48,9 +48,14 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
   });
 
   const createNoteMutation = useMutation(
-    (data: NoteFormData) => {
+    async (data: NoteFormData) => {
       console.log('Sende Notiz-Daten an API:', data);
-      return api.post('/api/v1/notes', data);
+      // Stelle sicher, dass die Daten im richtigen Format sind
+      const apiPayload = {
+        content: data.content,
+        contact_id: data.contact_id
+      };
+      return await api.post('/api/v1/notes', apiPayload);
     },
     {
       onSuccess: (response) => {
@@ -94,9 +99,15 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
         contact_id: contactId,
       };
       
+      // Debug-Ausgabe
+      console.log('Bereite Notiz-Daten vor:', payload);
+      console.log('Kontakt-ID (integer):', contactId);
+      console.log('Kontakt-ID ist gültig:', (!isNaN(contactId) && contactId > 0));
+      
       // Speichere die aktuelle contact_id für die Aktualisierung im onSuccess-Handler
       data = payload;
       
+      // API-Aufruf ausführen
       createNoteMutation.mutate(payload);
     } catch (error) {
       console.error('Fehler beim Verarbeiten des Formulars:', error);

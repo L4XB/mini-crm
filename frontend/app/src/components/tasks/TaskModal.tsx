@@ -53,10 +53,13 @@ const TaskModal: React.FC<TaskModalProps> = ({
 
   const createTaskMutation = useMutation(
     async (values: any) => {
-      // Convert deal_id to number or null
+      // Erstelle ein korrekt formatiertes Payload für die API
       const payload = {
-        ...values,
-        deal_id: values.deal_id ? parseInt(values.deal_id) : null,
+        title: values.title.trim(),
+        details: values.details?.trim() || '',
+        due_date: values.due_date ? new Date(values.due_date).toISOString() : new Date().toISOString(),
+        completed: !!values.completed,
+        deal_id: values.deal_id ? parseInt(values.deal_id) : 0
       };
       console.log('Erstelle Aufgabe:', payload);
       return await api.post('/api/v1/tasks', payload);
@@ -89,10 +92,13 @@ const TaskModal: React.FC<TaskModalProps> = ({
         throw new Error('Keine Aufgaben-ID vorhanden');
       }
       
-      // Convert deal_id to number or null
+      // Erstelle ein korrekt formatiertes Payload für die API
       const payload = {
-        ...values,
-        deal_id: values.deal_id ? parseInt(values.deal_id) : null,
+        title: values.title.trim(),
+        details: values.details?.trim() || '',
+        due_date: values.due_date ? new Date(values.due_date).toISOString() : new Date().toISOString(),
+        completed: !!values.completed,
+        deal_id: values.deal_id ? parseInt(values.deal_id) : 0
       };
       
       console.log('Aktualisiere Aufgabe:', task.id, payload);
