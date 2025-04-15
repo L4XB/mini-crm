@@ -50,22 +50,54 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({
   });
 
   const createDealMutation = useMutation(
-    (data: DealFormData) => api.post('/api/v1/deals', data),
+    async (data: DealFormData) => {
+      console.log('Erstelle Deal:', data);
+      return await api.post('/api/v1/deals', data);
+    },
     {
       onSuccess: () => {
+        // Invalidiere alle relevanten Caches
         queryClient.invalidateQueries(['contact', contactId.toString()]);
         queryClient.invalidateQueries('deals');
+        queryClient.invalidateQueries('dashboard');
         toast.success('Deal erfolgreich erstellt');
         onClose();
       },
-      onError: () => {
-        toast.error('Fehler beim Erstellen des Deals');
+      onError: (error: any) => {
+        console.error('Fehler beim Erstellen des Deals:', error);
+        const errorMessage = error?.response?.data?.error || 'Fehler beim Erstellen des Deals';
+        toast.error(errorMessage);
       },
     }
   );
 
   const handleSubmit = async (values: DealFormData) => {
-    createDealMutation.mutate(values);
+    try {
+      // Sicherstellen, dass die Kontakt-ID vorhanden ist
+      if (!contactId) {
+        toast.error('Kein gültiger Kontakt ausgewählt');
+        return;
+      }
+      
+      // Werte aufbereiten
+      const preparedData: DealFormData = {
+        ...values,
+        title: values.title.trim(),
+        description: values.description?.trim() || '',
+        value: typeof values.value === 'string' ? parseFloat(values.value) : values.value,
+        contact_id: contactId
+      };
+      
+      // Validierung des Datums
+      if (!preparedData.expected_date) {
+        preparedData.expected_date = format(tomorrow, 'yyyy-MM-dd');
+      }
+      
+      createDealMutation.mutate(preparedData);
+    } catch (error) {
+      console.error('Fehler beim Verarbeiten des Formulars:', error);
+      toast.error('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
+    }
   };
 
   return (

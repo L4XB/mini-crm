@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
-import { api } from '../../services/api';
+import { api, getData } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
@@ -36,14 +36,23 @@ const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('profile');
 
   // Fetch user settings
-  const { data: settings, isLoading: isLoadingSettings } = useQuery(['settings', user?.id], 
+  const { data: settings, isLoading: isLoadingSettings, error: settingsError } = useQuery(['settings', user?.id], 
     async () => {
       if (!user) return null;
-      const response = await api.get(`/api/v1/users/${user.id}/settings`);
-      return response.data;
+      try {
+        return await getData(`/api/v1/users/${user.id}/settings`);
+      } catch (error) {
+        console.error('Fehler beim Laden der Einstellungen:', error);
+        // Standardeinstellungen zurückgeben, wenn keine existieren
+        return { theme: 'light', language: 'de' };
+      }
     },
     {
       enabled: !!user,
+      // Fehlerbehandlung und Standardeinstellungen
+      onError: () => {
+        toast.error('Fehler beim Laden der Einstellungen. Standardwerte werden verwendet.');
+      }
     }
   );
 
@@ -80,7 +89,15 @@ const SettingsPage: React.FC = () => {
 
   // Update app settings mutation
   const updateSettingsMutation = useMutation(
-    (values: AppSettingsFormValues) => api.put(`/api/v1/users/${user?.id}/settings`, values),
+    (values: AppSettingsFormValues) => {
+      // Prüfen, ob Einstellungen bereits existieren
+      if (settingsError) {
+        // Wenn nicht, POST verwenden, um neue Einstellungen zu erstellen
+        return api.post(`/api/v1/users/${user?.id}/settings`, values);
+      }
+      // Andernfalls PUT verwenden, um bestehende Einstellungen zu aktualisieren
+      return api.put(`/api/v1/users/${user?.id}/settings`, values);
+    },
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['settings', user?.id]);
@@ -131,9 +148,22 @@ const SettingsPage: React.FC = () => {
 
   // Initial values for app settings form
   const appSettingsInitialValues: AppSettingsFormValues = {
-    theme: settings?.theme || 'light',
-    language: settings?.language || 'de',
+    // Stelle sicher, dass die Werte korrekt extrahiert werden
+    theme: (settings as any)?.theme || 'light',
+    language: (settings as any)?.language || 'de',
   };
+
+  // Prüfe, ob Standardeinstellungen erstellt werden müssen
+  React.useEffect(() => {
+    // Wenn der Benutzer angemeldet ist und ein Einstellungsfehler auftritt
+    if (user && settingsError) {
+      // Erstelle Standardeinstellungen
+      updateSettingsMutation.mutate({
+        theme: 'light',
+        language: 'de'
+      });
+    }
+  }, [user, settingsError, updateSettingsMutation]);
 
   // Validation schema for app settings form
   const appSettingsValidationSchema = Yup.object({

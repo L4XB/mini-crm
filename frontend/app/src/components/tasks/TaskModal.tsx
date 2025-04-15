@@ -52,52 +52,99 @@ const TaskModal: React.FC<TaskModalProps> = ({
   });
 
   const createTaskMutation = useMutation(
-    (values: any) => {
+    async (values: any) => {
       // Convert deal_id to number or null
       const payload = {
         ...values,
         deal_id: values.deal_id ? parseInt(values.deal_id) : null,
       };
-      return api.post('/api/v1/tasks', payload);
+      console.log('Erstelle Aufgabe:', payload);
+      return await api.post('/api/v1/tasks', payload);
     },
     {
       onSuccess: () => {
+        // Alle relevanten Caches invalidieren
         queryClient.invalidateQueries('tasks');
+        queryClient.invalidateQueries('dashboard');
+        
+        // Falls einen Deal zugeordnet ist, auch dessen Daten aktualisieren
+        if (initialValues.deal_id) {
+          queryClient.invalidateQueries(['deal', initialValues.deal_id]);
+        }
+        
         toast.success('Aufgabe erfolgreich erstellt');
         onClose();
       },
-      onError: () => {
-        toast.error('Fehler beim Erstellen der Aufgabe');
+      onError: (error: any) => {
+        console.error('Fehler beim Erstellen der Aufgabe:', error);
+        const errorMessage = error?.response?.data?.error || 'Fehler beim Erstellen der Aufgabe';
+        toast.error(errorMessage);
       },
     }
   );
 
   const updateTaskMutation = useMutation(
-    (values: any) => {
+    async (values: any) => {
+      if (!task?.id) {
+        throw new Error('Keine Aufgaben-ID vorhanden');
+      }
+      
       // Convert deal_id to number or null
       const payload = {
         ...values,
         deal_id: values.deal_id ? parseInt(values.deal_id) : null,
       };
-      return api.put(`/api/v1/tasks/${task?.id}`, payload);
+      
+      console.log('Aktualisiere Aufgabe:', task.id, payload);
+      return await api.put(`/api/v1/tasks/${task.id}`, payload);
     },
     {
       onSuccess: () => {
+        // Alle relevanten Caches invalidieren
         queryClient.invalidateQueries('tasks');
+        queryClient.invalidateQueries('dashboard');
+        
+        // Wenn es einen alten oder neuen Deal gibt, dessen Daten aktualisieren
+        if (task?.deal_id) {
+          queryClient.invalidateQueries(['deal', task.deal_id.toString()]);
+        }
+        if (initialValues.deal_id && initialValues.deal_id !== task?.deal_id) {
+          queryClient.invalidateQueries(['deal', initialValues.deal_id]);
+        }
+        
         toast.success('Aufgabe erfolgreich aktualisiert');
         onClose();
       },
-      onError: () => {
-        toast.error('Fehler beim Aktualisieren der Aufgabe');
+      onError: (error: any) => {
+        console.error('Fehler beim Aktualisieren der Aufgabe:', error);
+        const errorMessage = error?.response?.data?.error || 'Fehler beim Aktualisieren der Aufgabe';
+        toast.error(errorMessage);
       },
     }
   );
 
   const handleSubmit = async (values: any) => {
-    if (isEditing) {
-      updateTaskMutation.mutate(values);
-    } else {
-      createTaskMutation.mutate(values);
+    try {
+      // Werte aufbereiten
+      const preparedValues = {
+        ...values,
+        title: values.title.trim(),
+        details: values.details?.trim() || '',
+        // Stellt sicher, dass due_date ein gültiges Datum ist
+        due_date: values.due_date || format(tomorrow, 'yyyy-MM-dd'),
+        // Stellt sicher, dass deal_id ein gültiger Wert ist
+        deal_id: values.deal_id || null,
+        completed: !!values.completed
+      };
+      
+      if (isEditing) {
+        updateTaskMutation.mutate(preparedValues);
+      } else {
+        createTaskMutation.mutate(preparedValues);
+      }
+    } catch (error) {
+      console.error('Fehler beim Verarbeiten des Formulars:', error);
+      toast.error('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
     }
   };
 
@@ -181,7 +228,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
                   className="form-input"
                 >
                   <option value="">Keinen Deal auswählen</option>
-                  {deals?.map((deal) => (
+                  {Array.isArray(deals) && deals.map((deal) => (
                     <option key={deal.id} value={deal.id}>
                       {deal.title}
                     </option>

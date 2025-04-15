@@ -23,17 +23,20 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Stelle sicher, dass contacts ein Array ist und filtere dann
+  const contactsArray = Array.isArray(contacts) ? contacts : [];
+  
   // Filter contacts based on search term
-  const filteredContacts = contacts.filter(contact =>
-    `${contact.first_name} ${contact.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.company?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredContacts = contactsArray.filter(contact =>
+    `${contact?.first_name || ''} ${contact?.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (contact?.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (contact?.company || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const initialValues: NoteFormData & { contact_id_selection: string } = {
     content: '',
     contact_id: 0,
-    contact_id_selection: '',
+    contact_id_selection: contacts?.[0]?.id?.toString() || '',
   };
 
   const validationSchema = Yup.object({
@@ -45,28 +48,64 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
   });
 
   const createNoteMutation = useMutation(
-    (data: NoteFormData) => api.post('/api/v1/notes', data),
+    (data: NoteFormData) => {
+      console.log('Sende Notiz-Daten an API:', data);
+      return api.post('/api/v1/notes', data);
+    },
     {
-      onSuccess: () => {
+      onSuccess: (response) => {
+        // Aktualisiere alle relevanten Daten
         queryClient.invalidateQueries('notes');
-        queryClient.invalidateQueries(['contact', initialValues.contact_id.toString()]);
+        queryClient.invalidateQueries('contacts');
+        
+        // Wenn eine spezifische Kontakt-ID verwendet wurde, aktualisiere auch deren Daten
+        if (data && data.contact_id) {
+          queryClient.invalidateQueries(['contact', data.contact_id.toString()]);
+        }
+        
         toast.success('Notiz erfolgreich erstellt');
         onClose();
       },
-      onError: () => {
-        toast.error('Fehler beim Erstellen der Notiz');
+      onError: (error: any) => {
+        console.error('Fehler beim Erstellen der Notiz:', error);
+        const errorMessage = error?.response?.data?.error || 'Fehler beim Erstellen der Notiz';
+        toast.error(errorMessage);
       },
     }
   );
 
   const handleSubmit = async (values: NoteFormData & { contact_id_selection: string }) => {
-    // Convert contact_id_selection to a number for the API
-    const payload: NoteFormData = {
-      content: values.content,
-      contact_id: parseInt(values.contact_id_selection),
-    };
-    createNoteMutation.mutate(payload);
+    try {
+      // Validierung
+      if (!values.contact_id_selection) {
+        toast.error('Bitte wählen Sie einen Kontakt aus');
+        return;
+      }
+      
+      // Convert contact_id_selection to a number for the API
+      const contactId = parseInt(values.contact_id_selection);
+      if (isNaN(contactId) || contactId <= 0) {
+        toast.error('Ungültige Kontakt-ID');
+        return;
+      }
+      
+      const payload: NoteFormData = {
+        content: values.content.trim(),
+        contact_id: contactId,
+      };
+      
+      // Speichere die aktuelle contact_id für die Aktualisierung im onSuccess-Handler
+      data = payload;
+      
+      createNoteMutation.mutate(payload);
+    } catch (error) {
+      console.error('Fehler beim Verarbeiten des Formulars:', error);
+      toast.error('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
+    }
   };
+  
+  // Speichern der aktuellen Daten für den onSuccess-Handler
+  let data: NoteFormData | null = null;
 
   return (
     <Modal
@@ -107,11 +146,15 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
                 className="form-input"
               >
                 <option value="">Kontakt auswählen...</option>
-                {filteredContacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.first_name} {contact.last_name} {contact.company ? `(${contact.company})` : ''}
-                  </option>
-                ))}
+                {filteredContacts.length > 0 ? (
+                  filteredContacts.map((contact) => (
+                    <option key={contact.id} value={contact.id}>
+                      {contact.first_name || ''} {contact.last_name || ''} {contact.company ? `(${contact.company})` : ''}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>Keine Kontakte gefunden</option>
+                )}
               </Field>
               <ErrorMessage
                 name="contact_id_selection"

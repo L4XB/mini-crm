@@ -55,43 +55,81 @@ const ContactModal: React.FC<ContactModalProps> = ({
   });
 
   const createContactMutation = useMutation(
-    (data: ContactFormData) => api.post('/api/v1/contacts', data),
+    async (data: ContactFormData) => {
+      console.log('Erstelle Kontakt:', data);
+      return await api.post('/api/v1/contacts', data);
+    },
     {
       onSuccess: () => {
+        // Invalidiere alle kontaktbezogenen Daten
         queryClient.invalidateQueries('contacts');
+        queryClient.invalidateQueries('dashboard');
+        
         toast.success('Kontakt erfolgreich erstellt');
         onClose();
       },
-      onError: () => {
-        toast.error('Fehler beim Erstellen des Kontakts');
+      onError: (error: any) => {
+        console.error('Fehler beim Erstellen des Kontakts:', error);
+        const errorMessage = error?.response?.data?.error || 'Fehler beim Erstellen des Kontakts';
+        toast.error(errorMessage);
       },
     }
   );
 
   const updateContactMutation = useMutation(
-    (data: ContactFormData) =>
-      api.put(`/api/v1/contacts/${contact?.id}`, data),
+    async (data: ContactFormData) => {
+      if (!contact?.id) {
+        throw new Error('Keine Kontakt-ID vorhanden');
+      }
+      console.log('Aktualisiere Kontakt:', contact.id, data);
+      return await api.put(`/api/v1/contacts/${contact.id}`, data);
+    },
     {
       onSuccess: () => {
+        // Invalidiere alle relevanten Caches
         queryClient.invalidateQueries('contacts');
-        // Also invalidate specific contact data if it's cached
+        queryClient.invalidateQueries('dashboard');
+        
+        // Invalidiere spezifische Kontaktdaten, wenn sie gecacht sind
         if (contact?.id) {
           queryClient.invalidateQueries(['contact', contact.id]);
+          queryClient.invalidateQueries(['contact', contact.id.toString()]);
         }
+        
         toast.success('Kontakt erfolgreich aktualisiert');
         onClose();
       },
-      onError: () => {
-        toast.error('Fehler beim Aktualisieren des Kontakts');
+      onError: (error: any) => {
+        console.error('Fehler beim Aktualisieren des Kontakts:', error);
+        const errorMessage = error?.response?.data?.error || 'Fehler beim Aktualisieren des Kontakts';
+        toast.error(errorMessage);
       },
     }
   );
 
   const handleSubmit = async (values: ContactFormData) => {
-    if (isEditing) {
-      updateContactMutation.mutate(values);
-    } else {
-      createContactMutation.mutate(values);
+    try {
+      // Trimme alle String-Werte
+      const trimmedValues: ContactFormData = {
+        ...values,
+        first_name: values.first_name.trim(),
+        last_name: values.last_name.trim(),
+        email: values.email.trim(),
+        phone: values.phone?.trim() || '',
+        position: values.position?.trim() || '',
+        company: values.company?.trim() || '',
+        contact_stage: values.contact_stage
+      };
+      
+      // Führe die entsprechende Mutation aus
+      if (isEditing) {
+        updateContactMutation.mutate(trimmedValues);
+      } else {
+        createContactMutation.mutate(trimmedValues);
+      }
+    } catch (error) {
+      console.error('Fehler beim Verarbeiten des Formulars:', error);
+      toast.error('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
     }
   };
 

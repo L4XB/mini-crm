@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import { api, getData } from '../../services/api';
+import { getData } from '../../services/api';
 import { motion } from 'framer-motion';
 import { 
   UserGroupIcon, 
   CurrencyEuroIcon, 
   ClipboardDocumentListIcon,
-  ArrowTrendingUpIcon,
-  ArchiveBoxIcon,
-  ExclamationCircleIcon
+  ArrowTrendingUpIcon
 } from '@heroicons/react/24/outline';
 import { Doughnut, Line } from 'react-chartjs-2';
 import {
@@ -125,13 +123,25 @@ const Dashboard: React.FC = () => {
     return format(subDays(new Date(), 6 - i), 'dd.MM', { locale: de });
   });
 
-  // Sample sales trend data (in a real app this would come from the backend)
+  // Generiere Daten basierend auf den tatsächlichen Deals für die letzten 7 Tage
   const salesTrendData = {
     labels: dateLabels,
     datasets: [
       {
         label: 'Deal-Wert (€)',
-        data: [4200, 3800, 5100, 5700, 4900, 6300, 7100],
+        data: dateLabels.map((_, index) => {
+          const date = subDays(new Date(), 6 - index);
+          // Filtere Deals für diesen Tag
+          const dealsOnDate = deals.filter((deal: any) => {
+            if (!deal.created_at) return false;
+            const dealDate = new Date(deal.created_at);
+            return dealDate.getDate() === date.getDate() &&
+                  dealDate.getMonth() === date.getMonth() &&
+                  dealDate.getFullYear() === date.getFullYear();
+          });
+          // Berechne die Summe der Deal-Werte für diesen Tag
+          return dealsOnDate.reduce((sum: number, deal: any) => sum + (deal.value || 0), 0);
+        }),
         fill: false,
         backgroundColor: 'rgb(99, 102, 241)',
         borderColor: 'rgba(99, 102, 241, 0.7)',
@@ -300,7 +310,7 @@ const Dashboard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.4 }}
       >
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Umsatztrend (Letzte 7 Tage)</h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Umsatztrend (Letzte 7 Tage) <span className="text-xs text-gray-500 ml-2">Basierend auf echten Daten</span></h2>
         <div className="h-60">
           <Line 
             data={salesTrendData} 

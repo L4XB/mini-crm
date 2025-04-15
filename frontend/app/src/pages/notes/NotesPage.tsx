@@ -31,8 +31,7 @@ const NotesPage: React.FC = () => {
   
   // Fetch notes
   const { data: notes = [], isLoading, isError } = useQuery<Note[]>('notes', async () => {
-    const response = await api.get('/api/v1/notes');
-    return response.data;
+    return await getData<Note[]>('/api/v1/notes');
   });
 
   // Fetch contacts for the create modal
@@ -69,16 +68,16 @@ const NotesPage: React.FC = () => {
     setIsDeleteModalOpen(true);
   };
 
-  // Filter notes
-  const filteredNotes = notes.filter(note => {
+  // Filter notes (mit Prüfung, ob notes ein Array ist)
+  const filteredNotes = Array.isArray(notes) ? notes.filter(note => {
     // Apply search filter
     const searchMatch = searchTerm === '' || 
-      note.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      note.contact?.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      note.contact?.last_name.toLowerCase().includes(searchTerm.toLowerCase());
+      note?.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note?.contact?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note?.contact?.last_name?.toLowerCase().includes(searchTerm.toLowerCase());
     
     return searchMatch;
-  });
+  }) : [];
 
   return (
     <div>

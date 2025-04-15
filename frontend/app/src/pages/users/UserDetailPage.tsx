@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { api } from '../../services/api';
+import { api, getData } from '../../services/api';
 import { User } from '../../types/User';
 import { 
   ArrowLeftIcon,
@@ -32,9 +32,13 @@ interface UserStats {
 const UserDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient(); // Wird für Daten-Invalidierung nach Aktionen verwendet
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Validate user ID
+  const userId = id ? parseInt(id) : 0;
+  const isValidId = !isNaN(userId) && userId > 0;
 
   // Fetch user details
   const { 
@@ -43,10 +47,12 @@ const UserDetailPage: React.FC = () => {
     isError,
     error 
   } = useQuery<User>(
-    ['user', id],
+    ['user', userId],
     async () => {
-      const response = await api.get(`/api/v1/users/${id}`);
-      return response.data;
+      if (!isValidId) {
+        throw new Error('Ungültige Benutzer-ID');
+      }
+      return await getData<User>(`/api/v1/users/${userId}`);
     },
     {
       enabled: !!id,
@@ -56,10 +62,23 @@ const UserDetailPage: React.FC = () => {
 
   // Fetch user statistics
   const { data: stats } = useQuery<UserStats>(
-    ['user-stats', id],
+    ['user-stats', userId],
     async () => {
-      const response = await api.get(`/api/v1/users/${id}/stats`);
-      return response.data;
+      if (!isValidId) {
+        throw new Error('Ungültige Benutzer-ID');
+      }
+      try {
+        return await getData<UserStats>(`/api/v1/users/${userId}/stats`);
+      } catch (error) {
+        console.error('Fehler beim Laden der Statistiken:', error);
+        // Standard-Statistiken zurückgeben
+        return {
+          contactsCount: 0,
+          dealsCount: 0,
+          tasksCount: 0,
+          notesCount: 0
+        };
+      }
     },
     {
       enabled: !!id,
@@ -75,9 +94,11 @@ const UserDetailPage: React.FC = () => {
 
   // Delete user mutation
   const deleteUserMutation = useMutation(
-    (userId: string) => api.delete(`/api/v1/users/${userId}`),
+    (id: number) => api.delete(`/api/v1/users/${id}`),
     {
       onSuccess: () => {
+        // Cache invalidieren, um die Benutzerliste zu aktualisieren
+        queryClient.invalidateQueries('users');
         toast.success('Benutzer erfolgreich gelöscht');
         navigate('/users');
       },
@@ -90,8 +111,10 @@ const UserDetailPage: React.FC = () => {
 
   // Handle delete
   const handleDelete = () => {
-    if (id) {
-      deleteUserMutation.mutate(id);
+    if (isValidId) {
+      deleteUserMutation.mutate(userId);
+    } else {
+      toast.error('Ungültige Benutzer-ID');
     }
   };
 

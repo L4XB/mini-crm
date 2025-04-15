@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { api } from '../../services/api';
+import { api, getData } from '../../services/api';
 import { User } from '../../types/User';
 import { 
   UserPlusIcon,
@@ -19,6 +19,22 @@ import { motion } from 'framer-motion';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import UserModal from '../../components/users/UserModal';
 
+// Hilfsfunktion für sichere Datumsformatierung
+const formatDate = (dateValue: string | number | Date): string => {
+  try {
+    // Bei ISO-String oder Timestamp
+    const date = new Date(dateValue);
+    // Überprüfe, ob das Datum gültig ist
+    if (isNaN(date.getTime())) {
+      return 'Ungültiges Datum';
+    }
+    return format(date, 'dd.MM.yyyy', { locale: de });
+  } catch (error) {
+    console.error('Fehler bei der Datumsformatierung:', error);
+    return 'Ungültiges Datum';
+  }
+};
+
 const UsersPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,8 +46,7 @@ const UsersPage: React.FC = () => {
   
   // Fetch users
   const { data: users = [], isLoading, isError } = useQuery<User[]>('users', async () => {
-    const response = await api.get('/api/v1/users');
-    return response.data;
+    return await getData<User[]>('/api/v1/users');
   });
 
   // Delete user mutation
@@ -240,7 +255,9 @@ const UsersPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {format(new Date(user.created_at), 'dd.MM.yyyy', { locale: de })}
+                      {user.created_at ? 
+                        formatDate(user.created_at) : 
+                        'Nicht verfügbar'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
