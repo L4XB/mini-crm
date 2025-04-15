@@ -8,6 +8,7 @@ export interface Deal {
   description: string;
   value: number;
   status: 'open' | 'won' | 'lost';
+  stage: string; // Hinzugefügt um die Anforderungen von DealStats.tsx zu erfüllen
   expected_date: string;
   contact_id: number;
   user_id: number;

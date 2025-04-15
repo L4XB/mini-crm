@@ -16,7 +16,8 @@ import {
   BuildingOfficeIcon,
   UserCircleIcon,
   PlusIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  BanknotesIcon as CurrencyEuroIcon // Verwende BanknotesIcon als Ersatz für CurrencyEuroIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';

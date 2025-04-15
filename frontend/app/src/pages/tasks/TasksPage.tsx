@@ -13,7 +13,8 @@ import {
   CheckCircleIcon,
   ClockIcon,
   ArrowPathIcon,
-  AdjustmentsHorizontalIcon
+  AdjustmentsHorizontalIcon,
+  BanknotesIcon as CurrencyEuroIcon // Verwende BanknotesIcon als Ersatz für CurrencyEuroIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { format, isBefore, isToday, addDays } from 'date-fns';

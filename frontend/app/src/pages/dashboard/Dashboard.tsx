@@ -45,37 +45,52 @@ const Dashboard: React.FC = () => {
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
 
   // Fetch contacts
-  const { data: contacts = [] } = useQuery<Contact[]>('contacts', async () => {
+  const { data: contactsResponse = { data: [] } } = useQuery('contacts', async () => {
     const response = await api.get('/api/v1/contacts');
     return response.data;
   });
+  
+  // Stelle sicher, dass contacts ein Array ist
+  const contacts = Array.isArray(contactsResponse) ? contactsResponse : 
+                  contactsResponse.data ? contactsResponse.data : 
+                  contactsResponse.contacts ? contactsResponse.contacts : [];
 
   // Fetch deals
-  const { data: deals = [] } = useQuery<Deal[]>('deals', async () => {
+  const { data: dealsResponse = { data: [] } } = useQuery('deals', async () => {
     const response = await api.get('/api/v1/deals');
     return response.data;
   });
+  
+  // Stelle sicher, dass deals ein Array ist
+  const deals = Array.isArray(dealsResponse) ? dealsResponse : 
+               dealsResponse.data ? dealsResponse.data : 
+               dealsResponse.deals ? dealsResponse.deals : [];
 
   // Fetch tasks
-  const { data: tasks = [] } = useQuery<Task[]>('tasks', async () => {
+  const { data: tasksResponse = { data: [] } } = useQuery('tasks', async () => {
     const response = await api.get('/api/v1/tasks');
     return response.data;
   });
+  
+  // Stelle sicher, dass tasks ein Array ist
+  const tasks = Array.isArray(tasksResponse) ? tasksResponse : 
+               tasksResponse.data ? tasksResponse.data : 
+               tasksResponse.tasks ? tasksResponse.tasks : [];
 
   // Calculate statistics
   const totalContacts = contacts.length;
   const totalDeals = deals.length;
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(task => task.completed).length;
+  const completedTasks = tasks.filter((task: any) => task.completed).length;
   const pendingTasks = totalTasks - completedTasks;
 
   // Calculate total deal value
-  const totalDealValue = deals.reduce((sum, deal) => sum + deal.value, 0);
+  const totalDealValue = deals.reduce((sum: number, deal: any) => sum + deal.value, 0);
   
   // Calculate deals by status
-  const openDeals = deals.filter(deal => deal.status === 'open').length;
-  const wonDeals = deals.filter(deal => deal.status === 'won').length;
-  const lostDeals = deals.filter(deal => deal.status === 'lost').length;
+  const openDeals = deals.filter((deal: any) => deal.status === 'open').length;
+  const wonDeals = deals.filter((deal: any) => deal.status === 'won').length;
+  const lostDeals = deals.filter((deal: any) => deal.status === 'lost').length;
 
   // Deal status data for the chart
   const dealStatusData = {
@@ -99,9 +114,9 @@ const Dashboard: React.FC = () => {
   };
 
   // Contact stages data
-  const leadContacts = contacts.filter(contact => contact.contact_stage === 'Lead').length;
-  const prospectContacts = contacts.filter(contact => contact.contact_stage === 'Prospect').length;
-  const customerContacts = contacts.filter(contact => contact.contact_stage === 'Customer').length;
+  const leadContacts = contacts.filter((contact: any) => contact.contact_stage === 'Lead').length;
+  const prospectContacts = contacts.filter((contact: any) => contact.contact_stage === 'Prospect').length;
+  const customerContacts = contacts.filter((contact: any) => contact.contact_stage === 'Customer').length;
 
   const contactStageData = {
     labels: ['Leads', 'Prospects', 'Kunden'],
@@ -147,8 +162,8 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (tasks.length > 0) {
       const upcoming = tasks
-        .filter(task => !task.completed && isBefore(new Date(), new Date(task.due_date)))
-        .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+        .filter((task: any) => !task.completed && isBefore(new Date(), new Date(task.due_date)))
+        .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
         .slice(0, 5);
       
       setUpcomingTasks(upcoming);

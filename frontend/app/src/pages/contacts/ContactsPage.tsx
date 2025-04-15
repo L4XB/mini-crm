@@ -11,7 +11,8 @@ import {
   ChevronDownIcon,
   EnvelopeIcon,
   PhoneIcon,
-  BuildingOfficeIcon
+  BuildingOfficeIcon,
+  ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import ContactModal from '../../components/contacts/ContactModal';

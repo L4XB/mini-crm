@@ -13,7 +13,10 @@ interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   task: Task | null;
-  deals: Deal[];
+  deals?: Deal[];
+  isCreating?: boolean;
+  contactId?: number;
+  dealId?: number;
 }
 
 const TaskModal: React.FC<TaskModalProps> = ({
@@ -178,7 +181,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
                   className="form-input"
                 >
                   <option value="">Keinen Deal auswählen</option>
-                  {deals.map((deal) => (
+                  {deals?.map((deal) => (
                     <option key={deal.id} value={deal.id}>
                       {deal.title}
                     </option>

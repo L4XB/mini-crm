@@ -3,22 +3,37 @@ import toast from 'react-hot-toast';
 
 // Create axios instance with base configuration
 export const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080',
+  // Leere baseURL, da alle API-Anfragen mit /api/v1/ beginnen
+  baseURL: '',
   headers: {
     'Content-Type': 'application/json',
   },
+  // CORS wird durch den Proxy vermieden
+  withCredentials: true
 });
 
-// Add request interceptor
+// Keine Pfadkorrektur mehr notwendig, da alle Pfade mit '/api/v1/' beginnen
+
+// Add request interceptor for authentication with logging
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Log request details
+    console.log('API Request:', {
+      url: config.url,
+      method: config.method,
+      headers: config.headers,
+      data: config.data
+    });
+    
     return config;
   },
   (error) => {
+    console.error('API Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -26,9 +41,23 @@ api.interceptors.request.use(
 // Add response interceptor
 api.interceptors.response.use(
   (response) => {
+    console.log('API Response Success:', {
+      url: response.config.url,
+      method: response.config.method,
+      status: response.status,
+      data: response.data
+    });
     return response;
   },
   async (error) => {
+    console.error('API Response Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data,
+      error: error.message
+    });
+    
     const originalRequest = error.config;
     
     // If error is 401 Unauthorized and the request has not been retried yet
@@ -36,6 +65,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       
       try {
+        console.log('Attempting token refresh...');
         // Try to refresh token
         const response = await axios.post(
           `${api.defaults.baseURL}/api/v1/auth/refresh`,
@@ -58,6 +88,7 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
         // If refresh fails, logout
         localStorage.removeItem('token');
         toast.error('Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.');

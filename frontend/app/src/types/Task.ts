@@ -11,6 +11,13 @@ export interface Task {
   user_id: number;
   created_at: string;
   updated_at: string;
+  
+  // Felder, die in TaskBoard.tsx verwendet werden
+  status?: string;
+  priority?: string;
+  description?: string;
+  assigned_to?: User;
+  
   deal?: Deal;
   user?: User;
 }

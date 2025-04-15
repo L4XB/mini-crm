@@ -54,7 +54,7 @@
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-card p-6 transition-shadow duration-200 hover:shadow-card-hover;
+    @apply bg-white rounded-lg shadow p-6 transition-shadow duration-200 hover:shadow-md;
   }
 
   .badge {

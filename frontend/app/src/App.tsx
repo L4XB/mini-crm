@@ -20,7 +20,7 @@ import TasksPage from './pages/tasks/TasksPage';
 import NotesPage from './pages/notes/NotesPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import UsersPage from './pages/users/UsersPage';
-import UserProfile from './pages/users/UserProfile';
+import UserDetailPage from './pages/users/UserDetailPage';
 import NotFound from './pages/NotFound';
 
 const App: React.FC = () => {
@@ -68,7 +68,7 @@ const App: React.FC = () => {
         
         {/* Users - Admin only routes */}
         <Route path="/users" element={user && user.role === 'admin' ? <UsersPage /> : <Navigate to="/dashboard" />} />
-        <Route path="/users/:id" element={user ? <UserProfile /> : <Navigate to="/login" />} />
+        <Route path="/users/:id" element={user ? <UserDetailPage /> : <Navigate to="/login" />} />
       </Route>
 
       {/* 404 Not Found */}

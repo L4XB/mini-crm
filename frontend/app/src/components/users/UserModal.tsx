@@ -24,7 +24,7 @@ interface UserFormValues {
   role: string;
 }
 
-const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, isEditing }) => {
+const UserModal = ({ isOpen, onClose, user, isEditing }: UserModalProps): JSX.Element => {
   const queryClient = useQueryClient();
 
   // Create user mutation
@@ -115,14 +115,17 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, isEditing 
     // Remove confirmPassword as it's not needed for the API
     const { confirmPassword, ...apiValues } = values;
 
-    // If editing and password is empty, remove it
-    if (isEditing && !apiValues.password) {
-      delete apiValues.password;
-    }
-
     if (isEditing) {
-      updateUserMutation.mutate(apiValues);
+      // Wenn wir im Bearbeitungsmodus sind und kein Passwort gesetzt wurde, entfernen wir das Feld
+      if (!apiValues.password) {
+        const { password, ...rest } = apiValues;
+        updateUserMutation.mutate(rest);
+      } else {
+        // Sonst verwenden wir alle Felder einschließlich Passwort
+        updateUserMutation.mutate(apiValues);
+      }
     } else {
+      // Bei der Erstellung eines neuen Benutzers müssen wir immer das Passwort mitgeben
       createUserMutation.mutate(apiValues);
     }
   };
