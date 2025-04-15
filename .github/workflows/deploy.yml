@@ -1,6 +1,5 @@
 name: Build and Deploy Mini CRM
 
-# Workflow manuell auslösen, nicht bei jedem Push
 on:
   workflow_dispatch:
     inputs:
