@@ -2,25 +2,23 @@ package models
 
 import (
 	"time"
+
 	"gorm.io/gorm"
-	"github.com/go-playground/validator/v10"
 )
 
 // ContactSwagger ist nur für Swagger, damit alle Felder angezeigt werden
 // @Description Contact-Objekt für die API-Dokumentation
 // @name ContactSwagger
 type ContactSwagger struct {
-    ID        uint      `json:"id"`
-    UserID    uint      `json:"user_id"`
-    Name      string    `json:"name"`
-    Email     string    `json:"email"`
-    Phone     string    `json:"phone"`
-    Company   string    `json:"company"`
-    CreatedAt time.Time `json:"created_at"`
-    UpdatedAt time.Time `json:"updated_at"`
+	ID        uint      `json:"id"`
+	UserID    uint      `json:"user_id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	Phone     string    `json:"phone"`
+	Company   string    `json:"company"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
-
-
 
 type Contact struct {
 	gorm.Model
@@ -35,9 +33,4 @@ type Contact struct {
 	User         User   `json:"user" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;"`
 	Notes        []Note `json:"notes" gorm:"foreignKey:ContactID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;"`
 	Deals        []Deal `json:"deals" gorm:"foreignKey:ContactID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;"`
-}
-
-// Validate validates the contact struct
-func (c *Contact) Validate() error {
-	return validator.New().Struct(c)
 }

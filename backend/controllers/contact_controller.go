@@ -39,12 +39,6 @@ func CreateContact(c *gin.Context) {
 	// Ensure contact belongs to the authenticated user
 	contact.UserID = userID.(uint)
 
-	// Validate contact struct
-	if err := contact.Validate(); err != nil {
-		utils.BadRequestResponse(c, utils.FormatValidationErrors(err))
-		return
-	}
-
 	result := config.DB.Create(&contact)
 	if result.Error != nil {
 		utils.InternalServerErrorResponse(c, "Failed to create contact")
@@ -68,20 +62,20 @@ func CreateContact(c *gin.Context) {
 // @Router /contacts [get]
 func GetContacts(c *gin.Context) {
 	var contacts []models.Contact
-	
+
 	// Get authenticated user ID from context
 	userID, exists := c.Get("user_id")
 	if !exists {
 		utils.InternalServerErrorResponse(c, "User ID not found in context")
 		return
 	}
-	
+
 	// Get user role from context
 	userRole, _ := c.Get("user_role")
-	
+
 	// Query parameters
 	queryUserID := c.Query("user_id")
-	
+
 	// Admin can filter by any user_id or get all contacts
 	if userRole == "admin" {
 		if queryUserID != "" {
@@ -113,23 +107,23 @@ func GetContacts(c *gin.Context) {
 func GetContact(c *gin.Context) {
 	id := c.Param("id")
 	var contact models.Contact
-	
+
 	// Get authenticated user ID and role from context
 	userID, exists := c.Get("user_id")
 	if !exists {
 		utils.InternalServerErrorResponse(c, "User ID not found in context")
 		return
 	}
-	
+
 	userRole, _ := c.Get("user_role")
-	
+
 	// Preload associated objects for more complete data
 	result := config.DB.Preload("Notes").Preload("Deals").First(&contact, id)
 	if result.Error != nil {
 		utils.NotFoundResponse(c, "Contact not found")
 		return
 	}
-	
+
 	// Check if user is authorized to access this contact
 	if userRole != "admin" && contact.UserID != userID.(uint) {
 		utils.ForbiddenResponse(c, "You do not have permission to access this contact")
@@ -157,16 +151,16 @@ func GetContact(c *gin.Context) {
 // @Router /contacts/{id} [put]
 func UpdateContact(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	// Get authenticated user ID and role from context
 	userID, exists := c.Get("user_id")
 	if !exists {
 		utils.InternalServerErrorResponse(c, "User ID not found in context")
 		return
 	}
-	
+
 	userRole, _ := c.Get("user_role")
-	
+
 	// Find existing contact
 	var contact models.Contact
 	result := config.DB.First(&contact, id)
@@ -174,25 +168,25 @@ func UpdateContact(c *gin.Context) {
 		utils.NotFoundResponse(c, "Contact not found")
 		return
 	}
-	
+
 	// Check if user is authorized to update this contact
 	if userRole != "admin" && contact.UserID != userID.(uint) {
 		utils.ForbiddenResponse(c, "You do not have permission to update this contact")
 		return
 	}
-	
+
 	// Store original user ID to prevent changing ownership
 	originalUserID := contact.UserID
-	
+
 	// Bind JSON to contact
 	if err := c.ShouldBindJSON(&contact); err != nil {
 		utils.BadRequestResponse(c, utils.FormatValidationErrors(err))
 		return
 	}
-	
+
 	// Preserve original user ID (prevent changing ownership)
 	contact.UserID = originalUserID
-	
+
 	// Save updated contact
 	result = config.DB.Save(&contact)
 	if result.Error != nil {
@@ -219,16 +213,16 @@ func UpdateContact(c *gin.Context) {
 // @Router /contacts/{id} [delete]
 func DeleteContact(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	// Get authenticated user ID and role from context
 	userID, exists := c.Get("user_id")
 	if !exists {
 		utils.InternalServerErrorResponse(c, "User ID not found in context")
 		return
 	}
-	
+
 	userRole, _ := c.Get("user_role")
-	
+
 	// Find contact to delete
 	var contact models.Contact
 	result := config.DB.First(&contact, id)
@@ -236,25 +230,25 @@ func DeleteContact(c *gin.Context) {
 		utils.NotFoundResponse(c, "Contact not found")
 		return
 	}
-	
+
 	// Check if user is authorized to delete this contact
 	if userRole != "admin" && contact.UserID != userID.(uint) {
 		utils.ForbiddenResponse(c, "You do not have permission to delete this contact")
 		return
 	}
-	
+
 	// Use a transaction to delete associated data
 	tx := config.DB.Begin()
-	
+
 	// Delete related notes
 	tx.Where("contact_id = ?", id).Delete(&models.Note{})
-	
+
 	// Delete related deals
 	tx.Where("contact_id = ?", id).Delete(&models.Deal{})
-	
+
 	// Delete the contact
 	tx.Delete(&contact)
-	
+
 	// Commit the transaction
 	if err := tx.Commit().Error; err != nil {
 		utils.InternalServerErrorResponse(c, "Failed to delete contact and related data")

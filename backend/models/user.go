@@ -2,7 +2,7 @@ package models
 
 import (
 	"time"
-	"github.com/go-playground/validator/v10"
+
 	"gorm.io/gorm"
 )
 
@@ -14,15 +14,13 @@ import (
 // @Description Wird nur für die Swagger/OpenAPI-Doku verwendet
 // @Description NICHT für die eigentliche Logik nutzen!
 type UserSwagger struct {
-    ID        uint      `json:"id"`
-    Username  string    `json:"username"`
-    Email     string    `json:"email"`
-    Role      string    `json:"role"`
-    CreatedAt time.Time `json:"created_at"`
-    UpdatedAt time.Time `json:"updated_at"`
+	ID        uint      `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
-
-
 
 // Benutzerrollen-Konstanten
 const (
@@ -37,9 +35,4 @@ type User struct {
 	Password string   `json:"-" gorm:"not null" validate:"required,min=8"` // Passwort wird aus JSON-Responses ausgeblendet
 	Role     string   `json:"role" gorm:"default:'user'" validate:"oneof=user admin"`
 	Settings Settings `json:"settings" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;"`
-}
-
-// Validate validates the user struct
-func (u *User) Validate() error {
-	return validator.New().Struct(u)
 }
