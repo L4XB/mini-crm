@@ -50,6 +50,7 @@ func SetupRouter() *gin.Engine {
 		
 		// Health-Status abrufen
 		status := utils.CheckHealth(detailed)
+
 		
 		// HTTP-Status basierend auf Gesundheitszustand
 		httpStatus := http.StatusOK
