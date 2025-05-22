@@ -14,8 +14,8 @@ import (
 
 var (
 	jwtKey                = []byte(os.Getenv("JWT_SECRET_KEY"))
-	refreshJwtKey        = []byte(os.Getenv("JWT_REFRESH_SECRET_KEY"))
-	jwtExpirationHours   int
+	refreshJwtKey         = []byte(os.Getenv("JWT_REFRESH_SECRET_KEY"))
+	jwtExpirationHours    int
 	refreshExpirationDays int
 )
 
@@ -26,13 +26,13 @@ func init() {
 	if err != nil || jwtExpirationHours <= 0 {
 		jwtExpirationHours = 24 // Default to 24 hours
 	}
-	
+
 	// Set refresh token expiration time - from env or default to 7 days
 	refreshExpirationDays, err = strconv.Atoi(os.Getenv("REFRESH_TOKEN_EXPIRATION_DAYS"))
 	if err != nil || refreshExpirationDays <= 0 {
 		refreshExpirationDays = 7 // Default to 7 days
 	}
-	
+
 	// If refresh token key not set, use JWT key with a prefix
 	if len(refreshJwtKey) == 0 {
 		refreshJwtKey = append([]byte("refresh-"), jwtKey...)
@@ -49,8 +49,8 @@ type Claims struct {
 
 // RefreshClaims struct for refresh tokens
 type RefreshClaims struct {
-	UserID    uint   `json:"user_id"`
-	TokenID   string `json:"token_id"` // UUID für eindeutige Identifikation
+	UserID  uint   `json:"user_id"`
+	TokenID string `json:"token_id"` // UUID für eindeutige Identifikation
 	jwt.RegisteredClaims
 }
 

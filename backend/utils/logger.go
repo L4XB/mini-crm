@@ -88,3 +88,8 @@ func LogRequestDebug(c *gin.Context, message string) {
 	fields := GetRequestLogFields(c)
 	Logger.WithFields(fields).Debug(message)
 }
+
+// NewLogger creates a new logger instance with a component name
+func NewLogger(component string) *logrus.Entry {
+	return Logger.WithField("component", component)
+}

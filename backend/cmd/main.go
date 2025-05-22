@@ -47,23 +47,94 @@ func setupEnvironment() {
 	}
 }
 
-// migrate handles database migrations
-func migrate() {
-	// Run migrations
-	models := []interface{}{
-		&models.User{},
-		&models.Settings{},
-		&models.Contact{},
-		&models.Deal{},
-		&models.Task{},
-		&models.Note{},
+// Registriere Modelle in der Registry und führe Migrationen aus
+func setupModels() {
+	// ModelRegistry initialisieren
+	registry := models.GetRegistry()
+	registry.SetDB(config.DB)
+
+	// Standard-Modelle registrieren
+	modelsToRegister := []struct {
+		model          interface{}
+		preloadFields  []string
+		allowedFilters []string
+		requiresAuth   bool
+		requiresAdmin  bool
+	}{
+		{
+			model:          &models.User{},
+			preloadFields:  []string{"Settings"},
+			allowedFilters: []string{"email", "role"},
+			requiresAuth:   true,
+			requiresAdmin:  true,
+		},
+		{
+			model:          &models.Settings{},
+			preloadFields:  []string{},
+			allowedFilters: []string{"user_id"},
+			requiresAuth:   true,
+			requiresAdmin:  false,
+		},
+		{
+			model:          &models.Contact{},
+			preloadFields:  []string{"User"},
+			allowedFilters: []string{"status", "user_id"},
+			requiresAuth:   true,
+			requiresAdmin:  false,
+		},
+		{
+			model:          &models.Deal{},
+			preloadFields:  []string{"Contact", "User"},
+			allowedFilters: []string{"status", "user_id", "contact_id"},
+			requiresAuth:   true,
+			requiresAdmin:  false,
+		},
+		{
+			model:          &models.Task{},
+			preloadFields:  []string{"User"},
+			allowedFilters: []string{"priority", "status", "user_id"},
+			requiresAuth:   true,
+			requiresAdmin:  false,
+		},
+		{
+			model:          &models.Note{},
+			preloadFields:  []string{"User"},
+			allowedFilters: []string{"user_id", "contact_id", "deal_id"},
+			requiresAuth:   true,
+			requiresAdmin:  false,
+		},
 	}
 
-	for _, model := range models {
-		err := config.DB.AutoMigrate(model)
+	for _, m := range modelsToRegister {
+		err := registry.RegisterModel(
+			m.model,
+			m.preloadFields,
+			m.allowedFilters,
+			m.requiresAuth,
+			m.requiresAdmin,
+		)
 		if err != nil {
-			log.Fatalf("Error migrating %T: %v", model, err)
+			log.Fatalf("Fehler beim Registrieren des Modells %T: %v", m.model, err)
 		}
+	}
+
+	// Benutzerdefinierte Endpunkte registrieren
+	// Zum Beispiel: Aufgaben-Abschluss Toggle
+	err := registry.RegisterCustomEndpoint(
+		"Task",
+		"/:id/toggle",
+		"PATCH",
+		"Toggle completion status of a task",
+		controllers.ToggleTaskCompletion,
+	)
+	if err != nil {
+		log.Printf("Warnung: Konnte benutzerdefinierten Endpunkt nicht registrieren: %v", err)
+	}
+
+	// Tabellen in der Datenbank erstellen/migrieren
+	err = registry.InitializeTables()
+	if err != nil {
+		log.Fatalf("Fehler bei der Tabellenmigration: %v", err)
 	}
 
 	// Create default admin if no users exist
@@ -74,7 +145,7 @@ func migrate() {
 		createDefaultAdmin()
 	}
 
-	fmt.Println("Database migration complete!")
+	fmt.Println("Model-Registry und Datenbankmigration abgeschlossen!")
 }
 
 // createDefaultAdmin creates a default admin user
@@ -149,9 +220,9 @@ func main() {
 		}
 	}
 
-	// Run migrations
-	migrate()
-	utils.Logger.Info("Database migrations completed")
+	// Modelle registrieren und Migrationen ausführen
+	setupModels()
+	utils.Logger.Info("Model-Registry und Datenbankmigrationen abgeschlossen")
 
 	// Initialize controllers with DB connection
 	controllers.InitDB()
@@ -169,8 +240,14 @@ func main() {
 		"version":     "1.0.0",
 	}).Info("Mini CRM API starting...")
 
-	// Setup and run router
+	// Router einrichten
 	r := routes.SetupRouter()
+	
+	// Dynamische Routen für registrierte Modelle einrichten
+	routes.RegisterDynamicRoutes(r, config.DB)
+	utils.Logger.Info("Dynamische API-Routen registriert")
+	
+	// Server starten
 	port := os.Getenv("PORT")
 	r.Run(fmt.Sprintf(":%s", port))
 }

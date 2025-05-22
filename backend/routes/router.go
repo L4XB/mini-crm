@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/deinname/mini-crm-backend/controllers"
-	_ "github.com/deinname/mini-crm-backend/docs" // Swagger-Dokumentation importieren
 	"github.com/deinname/mini-crm-backend/middleware"
 	"github.com/deinname/mini-crm-backend/utils"
 	"github.com/gin-gonic/gin"
@@ -21,25 +20,25 @@ func SetupRouter() *gin.Engine {
 
 	// Recovery middleware für Panic-Handling
 	r.Use(gin.Recovery())
-	
+
 	// Test-Modus für UI-Entwicklung (muss vor anderen Middlewares geladen werden)
 	r.Use(middleware.TestModeMiddleware())
-	
+
 	// Logging-Middleware hinzufügen
 	r.Use(middleware.LoggerMiddleware())
-	
+
 	// Metrics-Middleware für Monitoring
 	r.Use(middleware.MetricsMiddleware())
-	
+
 	// Rate Limiter Middleware
 	r.Use(middleware.RateLimiterMiddleware())
-	
+
 	// Anfragegröße begrenzen auf 10MB
 	r.Use(middleware.RequestSizeMiddleware(10 * 1024 * 1024))
 
 	// CORS configuration
 	r.Use(middleware.CorsMiddleware())
-	
+
 	// API Key validation for external applications
 	r.Use(middleware.APIKeyMiddleware())
 
@@ -47,33 +46,32 @@ func SetupRouter() *gin.Engine {
 	r.GET("/health", func(c *gin.Context) {
 		// Parameter für detaillierte Infos
 		detailed := c.Query("detailed") == "true"
-		
+
 		// Health-Status abrufen
 		status := utils.CheckHealth(detailed)
 
-		
 		// HTTP-Status basierend auf Gesundheitszustand
 		httpStatus := http.StatusOK
 		if status.Status == "error" {
 			httpStatus = http.StatusServiceUnavailable
 		}
-		
+
 		c.JSON(httpStatus, status)
 	})
-	
+
 	// Einfacher Readiness-Check für Kubernetes/Docker
 	r.GET("/ready", func(c *gin.Context) {
 		// Schneller Check ohne detaillierte Infos
 		status := utils.CheckHealth(false)
-		
+
 		if status.Status == "error" {
 			c.AbortWithStatus(http.StatusServiceUnavailable)
 			return
 		}
-		
+
 		c.Status(http.StatusOK)
 	})
-	
+
 	// Prometheus Metrics endpoint (nur für Admins zugänglich)
 	if os.Getenv("ENV") == "production" {
 		// In Produktion mit Admin-Token schützen
@@ -86,7 +84,7 @@ func SetupRouter() *gin.Engine {
 			r.GET("/metrics", middleware.AdminAuthMiddleware(), gin.WrapH(promhttp.Handler()))
 		}
 	}
-	
+
 	// Swagger-Dokumentation (nur in Entwicklungsumgebung oder auf Anfrage verfügbar)
 	if os.Getenv("ENV") != "production" || os.Getenv("ENABLE_SWAGGER") == "true" {
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -95,8 +93,8 @@ func SetupRouter() *gin.Engine {
 	// Setze Cache-Control header für bessere Performance
 	r.Use(func(c *gin.Context) {
 		// Set cache control headers - dynamische API-Daten sollten nicht gecached werden
-		if !strings.HasPrefix(c.Request.URL.Path, "/assets/") && 
-		   !strings.HasPrefix(c.Request.URL.Path, "/static/") {
+		if !strings.HasPrefix(c.Request.URL.Path, "/assets/") &&
+			!strings.HasPrefix(c.Request.URL.Path, "/static/") {
 			c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 			c.Header("Pragma", "no-cache")
 			c.Header("Expires", "0")
@@ -111,7 +109,7 @@ func SetupRouter() *gin.Engine {
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("X-XSS-Protection", "1; mode=block")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
-		
+
 		// Content-Security-Policy basierend auf Umgebung setzen
 		if os.Getenv("ENV") == "production" {
 			// Strengere CSP für Produktion
@@ -134,7 +132,7 @@ func SetupRouter() *gin.Engine {
 		auth.POST("/login", middleware.LoginRateLimiter(), controllers.Login)
 		auth.GET("/me", middleware.AuthMiddleware(), controllers.GetMe)
 		auth.POST("/refresh", middleware.AuthMiddleware(), controllers.RefreshToken)
-		
+
 		// Spezielle Mobile-App-Endpunkte - optimiert für Flutter-Integration
 		auth.POST("/mobile/login", middleware.LoginRateLimiter(), controllers.MobileLogin)
 		auth.POST("/mobile/refresh", controllers.MobileRefreshToken)
@@ -208,7 +206,7 @@ func SetupRouter() *gin.Engine {
 	r.DELETE("/users/:id", middleware.AuthMiddleware(), middleware.AdminMiddleware(), controllers.DeleteUser)
 
 	r.DELETE("/users/me", middleware.AuthMiddleware(), controllers.DeleteOwnAccount)
-	
+
 	r.GET("/users/:id/settings", middleware.AuthMiddleware(), controllers.GetUserSettings)
 	r.PUT("/users/:id/settings", middleware.AuthMiddleware(), controllers.UpdateSettings)
 

@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/deinname/mini-crm-backend/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -87,18 +86,9 @@ func SetupDB() (*gorm.DB, error) {
 	// Zeitlimit für Verbindungen im Pool
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	// Auto-Migration der Modelle
-	err = db.AutoMigrate(
-		&models.User{},
-		&models.Settings{},
-		&models.Contact{},
-		&models.Deal{},
-		&models.Note{},
-		&models.Task{},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("fehler bei der Auto-Migration: %w", err)
-	}
+	// Auto-Migration wird später durch die ModelRegistry ausgeführt
+	// Das vermeidet Import-Zyklen zwischen models und config
+	log.Println("Auto-Migration wird durch die ModelRegistry gesteuert")
 
 	log.Println("Datenbankverbindung erfolgreich hergestellt")
 	return db, nil

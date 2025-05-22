@@ -83,7 +83,7 @@ export class ApiClient {
    */
   async login(email: string, password: string): Promise<AuthToken> {
     try {
-      const response = await this.axios.post<ApiResponse<AuthToken>>('/auth/login', {
+      const response = await this.axios.post<ApiResponse<AuthToken>>('/api/v1/auth/login', {
         email,
         password
       });
@@ -109,7 +109,7 @@ export class ApiClient {
    */
   async register(username: string, email: string, password: string): Promise<User> {
     try {
-      const response = await this.axios.post<ApiResponse<User>>('/auth/register', {
+      const response = await this.axios.post<ApiResponse<User>>('/api/v1/auth/register', {
         username,
         email,
         password
@@ -132,7 +132,7 @@ export class ApiClient {
    */
   async getCurrentUser(): Promise<User> {
     try {
-      const response = await this.axios.get<ApiResponse<User>>('/auth/me');
+      const response = await this.axios.get<ApiResponse<User>>('/api/v1/auth/me');
       
       if (response.data.success && response.data.data) {
         return response.data.data;
@@ -166,7 +166,7 @@ export class ApiClient {
     }
     
     try {
-      const response = await this.axios.post<ApiResponse<AuthToken>>('/auth/refresh', {
+      const response = await this.axios.post<ApiResponse<AuthToken>>('/api/v1/auth/refresh', {
         refreshToken: this.refreshToken
       });
       
@@ -301,64 +301,64 @@ export class ApiClient {
    * Users API client
    */
   users = {
-    getAll: () => this.get<User[]>('/users'),
-    getById: (id: number) => this.get<User>(`/users/${id}`),
-    create: (data: Partial<User>) => this.post<User>('/users', data),
-    update: (id: number, data: Partial<User>) => this.put<User>(`/users/${id}`, data),
-    delete: (id: number) => this.delete<boolean>(`/users/${id}`)
+    getAll: () => this.get<User[]>('/api/v1/users'),
+    getById: (id: number) => this.get<User>(`/api/v1/users/${id}`),
+    create: (data: Partial<User>) => this.post<User>('/api/v1/users', data),
+    update: (id: number, data: Partial<User>) => this.put<User>(`/api/v1/users/${id}`, data),
+    delete: (id: number) => this.delete<boolean>(`/api/v1/users/${id}`)
   };
 
   /**
    * Contacts API client
    */
   contacts = {
-    getAll: () => this.get<Contact[]>('/contacts'),
-    getById: (id: number) => this.get<Contact>(`/contacts/${id}`),
-    create: (data: Partial<Contact>) => this.post<Contact>('/contacts', data),
-    update: (id: number, data: Partial<Contact>) => this.put<Contact>(`/contacts/${id}`, data),
-    delete: (id: number) => this.delete<boolean>(`/contacts/${id}`)
+    getAll: () => this.get<Contact[]>('/api/v1/contacts'),
+    getById: (id: number) => this.get<Contact>(`/api/v1/contacts/${id}`),
+    create: (data: Partial<Contact>) => this.post<Contact>('/api/v1/contacts', data),
+    update: (id: number, data: Partial<Contact>) => this.put<Contact>(`/api/v1/contacts/${id}`, data),
+    delete: (id: number) => this.delete<boolean>(`/api/v1/contacts/${id}`)
   };
 
   /**
    * Deals API client
    */
   deals = {
-    getAll: () => this.get<Deal[]>('/deals'),
-    getById: (id: number) => this.get<Deal>(`/deals/${id}`),
-    create: (data: Partial<Deal>) => this.post<Deal>('/deals', data),
-    update: (id: number, data: Partial<Deal>) => this.put<Deal>(`/deals/${id}`, data),
-    delete: (id: number) => this.delete<boolean>(`/deals/${id}`)
+    getAll: () => this.get<Deal[]>('/api/v1/deals'),
+    getById: (id: number) => this.get<Deal>(`/api/v1/deals/${id}`),
+    create: (data: Partial<Deal>) => this.post<Deal>('/api/v1/deals', data),
+    update: (id: number, data: Partial<Deal>) => this.put<Deal>(`/api/v1/deals/${id}`, data),
+    delete: (id: number) => this.delete<boolean>(`/api/v1/deals/${id}`)
   };
 
   /**
    * Tasks API client
    */
   tasks = {
-    getAll: () => this.get<Task[]>('/tasks'),
-    getById: (id: number) => this.get<Task>(`/tasks/${id}`),
-    create: (data: Partial<Task>) => this.post<Task>('/tasks', data),
-    update: (id: number, data: Partial<Task>) => this.put<Task>(`/tasks/${id}`, data),
-    delete: (id: number) => this.delete<boolean>(`/tasks/${id}`),
-    toggleCompletion: (id: number) => this.put<Task>(`/tasks/${id}/toggle`, {})
+    getAll: () => this.get<Task[]>('/api/v1/tasks'),
+    getById: (id: number) => this.get<Task>(`/api/v1/tasks/${id}`),
+    create: (data: Partial<Task>) => this.post<Task>('/api/v1/tasks', data),
+    update: (id: number, data: Partial<Task>) => this.put<Task>(`/api/v1/tasks/${id}`, data),
+    delete: (id: number) => this.delete<boolean>(`/api/v1/tasks/${id}`),
+    toggleCompletion: (id: number) => this.put<Task>(`/api/v1/tasks/${id}/toggle`, {})
   };
 
   /**
    * Notes API client
    */
   notes = {
-    getAll: () => this.get<Note[]>('/notes'),
-    getById: (id: number) => this.get<Note>(`/notes/${id}`),
-    create: (data: Partial<Note>) => this.post<Note>('/notes', data),
-    update: (id: number, data: Partial<Note>) => this.put<Note>(`/notes/${id}`, data),
-    delete: (id: number) => this.delete<boolean>(`/notes/${id}`)
+    getAll: () => this.get<Note[]>('/api/v1/notes'),
+    getById: (id: number) => this.get<Note>(`/api/v1/notes/${id}`),
+    create: (data: Partial<Note>) => this.post<Note>('/api/v1/notes', data),
+    update: (id: number, data: Partial<Note>) => this.put<Note>(`/api/v1/notes/${id}`, data),
+    delete: (id: number) => this.delete<boolean>(`/api/v1/notes/${id}`)
   };
 
   /**
    * Settings API client
    */
   settings = {
-    get: () => this.get<Settings>('/settings'),
-    update: (data: Partial<Settings>) => this.put<Settings>('/settings', data)
+    get: () => this.get<Settings>('/api/v1/settings'),
+    update: (data: Partial<Settings>) => this.put<Settings>('/api/v1/settings', data)
   };
 
   /**
@@ -367,7 +367,7 @@ export class ApiClient {
    * @returns Client for the entity
    */
   getEntityClient(entityName: string) {
-    const path = `/${entityName.toLowerCase()}`;
+    const path = `/api/v1/${entityName.toLowerCase()}`;
     
     return {
       getAll: () => this.get<any[]>(path),

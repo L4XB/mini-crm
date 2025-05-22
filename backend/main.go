@@ -1,10 +1,7 @@
 // This file exists just to generate Swagger documentation
 package main
 
-import (
-	// Import swagger docs
-	_ "github.com/deinname/mini-crm-backend/docs"
-)
+// Import swagger docs
 
 // @title Mini CRM API
 // @version 1.0
