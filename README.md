@@ -1,81 +1,87 @@
-# Mini CRM System
+# Mini CRM Backend
 
-A comprehensive Customer Relationship Management (CRM) system with a Go-based backend API and React frontend. This system is designed to manage customer relationships, deals, tasks, and notes in a modern, responsive interface.
+A comprehensive Customer Relationship Management (CRM) backend API built with Go, Gin framework, and GORM. This system provides a robust foundation for managing customer relationships, deals, tasks, and notes through a RESTful API.
 
 ![Mini CRM](assets/banner.png)
 
 ## Overview
 
-This repository contains the backend and frontend components of the Mini CRM system:
-
-- **Backend**: A robust API built with Go, Gin, and GORM
-- **Frontend**: A responsive web application built with React and TypeScript (currently in development)
+This backend API is designed with modern architecture principles and provides a complete set of endpoints for a CRM system. It includes authentication, authorization, and full CRUD operations for all necessary entities in a CRM application.
 
 ## Technology Stack
 
-### Backend
-- **Language**: Go
+- **Language**: Go (1.17+)
 - **Web Framework**: Gin
 - **ORM**: GORM
 - **Database**: PostgreSQL
-- **Authentication**: JWT
+- **Authentication**: JWT with role-based access control
 - **Validation**: go-playground/validator
-- **Logging**: logrus
-- **Security**: Rate Limiting, Request-Size-Limiting, CORS
+- **Logging**: Structured logging with logrus
+- **Documentation**: Swagger/OpenAPI
+- **Monitoring**: Prometheus metrics
+- **Security**: 
+  - Rate limiting with IP-based restrictions
+  - Request size limiting
+  - CORS configuration
+  - API key validation
+  - Content security policies
 
 ## Features
 
-- **User Authentication & Authorization**
-  - JWT-based authentication
-  - Role-based access control (admin/user)
-  - Refresh token mechanism
-  - Mobile-specific authentication
-  
-- **Comprehensive Data Management**
-  - CRUD operations for all entities
-  - Contacts, deals, tasks, and notes management
-  - User settings and preferences
-  
-- **Security**
-  - API key validation for external applications
-  - Rate limiting and protection against brute-force attacks
-  - Request size limiting
-  - CORS configuration
-  - Data integrity policies
-  
-- **Developer Experience**
-  - Structured logging with request tracking
-  - Prometheus metrics for monitoring (admin only)
-  - Health check endpoints for container orchestration
-  - Comprehensive Swagger documentation with interactive API testing
-  - Test mode for UI development
-  - Standardized API responses
+### Authentication & Authorization
+- Secure JWT-based authentication
+- Role-based access control (admin/user roles)
+- Resource ownership validation
+- Refresh token mechanism
+- Mobile-specific authentication endpoints
+- Protection against brute-force attacks with stricter rate limiting for auth endpoints
+
+### Data Management
+- Complete CRUD operations for all entities
+- Relationship management between all models
+- Structured response format for consistent API
+- Data validation using go-playground/validator
+
+### Monitoring & Operations
+- Health check endpoints for container orchestration (`/health` and `/ready`)
+- Prometheus metrics for monitoring (admin-protected)
+- Structured logging with request tracking
+- Configurable log levels
+
+### Developer Experience
+- Comprehensive Swagger documentation with interactive testing
+- Special test mode for UI development
+- Test data seeding capabilities
+- Standardized error responses
 
 ## Data Models
 
+The system includes the following core data models with appropriate relationships:
+
 1. **User**
-   - Attributes: Username, Email, Password, Role
-   - Relationships: Settings, Contacts, Deals, Notes, Tasks
+   - Core attributes: Username, Email, Password (encrypted), Role
+   - Validation: Email format, username length, password strength
+   - Relationships: One-to-one with Settings, one-to-many with Contacts, Deals, Tasks, Notes
 
 2. **Contact**
-   - Attributes: First Name, Last Name, Email, Phone
-   - Relationships: User, Notes, Deals
+   - Core attributes: First Name, Last Name, Email, Phone, etc.
+   - Relationships: Belongs to User, has many Deals and Notes
 
 3. **Deal**
-   - Attributes: Title, Description, Value, Status
-   - Relationships: Contact, User, Tasks
+   - Core attributes: Title, Description, Value, Status
+   - Relationships: Belongs to Contact and User, has many Tasks
 
-4. **Note**
-   - Attributes: Content
-   - Relationships: Contact, Deal, User
+4. **Task**
+   - Core attributes: Title, Details, Due Date, Completed Status
+   - Relationships: Belongs to Deal and User
 
-5. **Task**
-   - Attributes: Title, Details, Due Date, Completed Status
-   - Relationships: Deal, User
+5. **Note**
+   - Core attributes: Content, timestamps
+   - Relationships: Can belong to Contact, Deal, and User
 
 6. **Settings**
-   - Attributes: Theme, Language
-   - Relationship: User
+   - Core attributes: Theme, Language
+   - Relationship: Belongs to User
 
 ## Getting Started
 
@@ -83,12 +89,9 @@ This repository contains the backend and frontend components of the Mini CRM sys
 
 - Go 1.17 or higher
 - PostgreSQL 12 or higher
-- Node.js 16 or higher (for frontend development)
-- npm or yarn (for frontend development)
+- Docker & Docker Compose (optional, for containerized setup)
 
 ### Installation
-
-#### Backend Setup
 
 1. Clone the repository:
 ```bash
@@ -121,41 +124,31 @@ go mod download
 
 4. Start the backend server:
 ```bash
-go run cmd/main.go
-# or using make:
-make run
+# Run directly
+go run main.go
+
+# Using make commands
+make run         # Standard run
+make run-dev     # Development mode with hot reload
+
+# Using Docker
+docker-compose up -d
 ```
 
-#### Frontend Setup
+### Initial Access
 
-The frontend is currently in development. To run it locally:
+The system creates a default admin user on first run:
+- Username: `admin`
+- Email: `admin@example.com`
+- Password: `admin123`
 
-1. Navigate to the frontend directory:
-```bash
-cd frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-# or
-yarn install
-```
-
-3. Start the development server:
-```bash
-npm start
-# or
-yarn start
-```
-
-The frontend will be available at `http://localhost:3001`.
+**Important**: Change these credentials immediately in a production environment.
 
 ## API Documentation
 
 ### Base URL
 
-By default, the server runs at:
+The API is accessible at:
 ```
 http://localhost:8081/api/v1
 ```
@@ -171,178 +164,167 @@ To obtain a token, send a POST request to `/api/v1/auth/login` with valid creden
 
 ### Key Endpoints
 
-- **Authentication**:
-  - POST `/api/v1/auth/register` - Register new user
-  - POST `/api/v1/auth/login` - Login
-  - GET `/api/v1/auth/me` - Get current user
-  - POST `/api/v1/auth/refresh` - Refresh token
+#### Authentication
+- `POST /api/v1/auth/register` - Register new user
+- `POST /api/v1/auth/login` - Login
+- `GET /api/v1/auth/me` - Get current user
+- `POST /api/v1/auth/refresh` - Refresh token
+- `POST /api/v1/auth/mobile/login` - Mobile-optimized login
+- `POST /api/v1/auth/mobile/refresh` - Mobile-optimized token refresh
 
-- **Users** (some endpoints admin-only):
-  - GET `/api/v1/users` - Get all users
-  - GET `/api/v1/users/:id` - Get user by ID
-  - POST `/api/v1/users` - Create user (admin)
-  - PUT `/api/v1/users/:id` - Update user
-  - DELETE `/api/v1/users/:id` - Delete user (admin)
+#### Users (admin privileges required for some endpoints)
+- `GET /api/v1/users` - List all users
+- `GET /api/v1/users/:id` - Get user by ID
+- `POST /api/v1/users` - Create user (admin only)
+- `PUT /api/v1/users/:id` - Update user
+- `DELETE /api/v1/users/:id` - Delete user (admin only)
 
-- **Contacts**:
-  - GET `/api/v1/contacts` - Get contacts
-  - GET `/api/v1/contacts/:id` - Get contact by ID
-  - POST `/api/v1/contacts` - Create contact
-  - PUT `/api/v1/contacts/:id` - Update contact
-  - DELETE `/api/v1/contacts/:id` - Delete contact
+#### Contacts
+- `GET /api/v1/contacts` - List user's contacts
+- `GET /api/v1/contacts/:id` - Get contact by ID
+- `POST /api/v1/contacts` - Create contact
+- `PUT /api/v1/contacts/:id` - Update contact
+- `DELETE /api/v1/contacts/:id` - Delete contact
 
 Similar endpoints exist for **Deals**, **Notes**, **Tasks**, and **Settings**.
 
-### Complete Documentation
+### Interactive Documentation
 
-The complete API documentation is available as a Postman collection. Import the file `mini_crm_api_complete.json` into Postman to see all endpoints with examples.
-
-Additionally, the API is documented with Swagger UI, which is available at `/swagger/index.html` when running the server in development mode.
+1. Access the Swagger UI at `/swagger/index.html` when running in development mode
+2. For a complete collection of API requests, import the file `mini_crm_api_complete.json` into Postman
 
 ## Security Features
 
-The Mini CRM system implements several security measures:
+### Authentication & Authorization
+- JWT tokens with configurable expiration
+- Separate middleware for admin-only routes
+- Resource ownership verification on all operations
+- Password encryption with bcrypt
 
-### 1. JWT Authentication
-- Secure token-based authentication
-- Configurable token lifetime
-- Encrypted user passwords with bcrypt
+### Request Protection
+- IP-based rate limiting with different thresholds for sensitive endpoints
+- Request size limiting (default: 10MB) to prevent DoS attacks
+- CORS configuration with environment-specific settings
+- Content Security Policy headers
 
-### 2. Role-based Authorization
-- Different permissions for admin and regular users
-- Resource ownership verification for all operations
+### API Security
+- API key validation for external applications
+- Protection against common web vulnerabilities
+- Security headers (X-Content-Type-Options, X-Frame-Options, etc.)
 
-### 3. Rate Limiting
-- Protection against brute-force attacks
-- Stricter limits for authentication endpoints
-- IP-based limiting
-
-### 4. Request Size Limiting
-- Protection against denial-of-service via large payloads
-- Configurable size restriction (default: 10MB)
-
-### 5. CORS Configuration
-- Restriction to allowed origins
-- Protection against cross-site requests
-
-### 6. Comprehensive Logging
-- Structured logs for all requests and system events
-- Request tracking with unique request IDs
-- Different log levels for different environments
-
-### 7. Data Security
-- Validation of all inputs
-- Prevention of resource ownership changes
-- Protection against unauthorized data access
+### Operational Security
+- Detailed request logging with unique request IDs
+- Configurable log levels based on environment
+- Prometheus metrics for monitoring (protected by admin authentication)
+- Environment-specific security configurations
 
 ## Development Features
 
-### Logging
+### Logging System
 
-The system uses structured logging with different log levels:
+The application uses structured logging with configurable levels:
 
-- **debug**: Detailed development information
-- **info**: General application information
-- **warn**: Warnings and potentially problematic situations
-- **error**: Errors affecting application functionality
+- **debug**: Detailed information for debugging
+- **info**: General operational information
+- **warn**: Warning conditions that should be addressed
+- **error**: Error conditions that affect functionality
 
-The log level can be configured via the `LOG_LEVEL` environment variable.
+Logs include contextual information such as request ID, user ID (when authenticated), IP address, and timing information.
 
-### Swagger Documentation
+### API Documentation
 
-The Mini CRM has comprehensive Swagger documentation that greatly facilitates frontend development and integration:
+Comprehensive Swagger/OpenAPI documentation is integrated:
 
-#### Accessing Swagger Documentation
+- Access the interactive UI at `/swagger/index.html` in development mode
+- Test endpoints directly from the browser
+- View complete request/response models
+- Export documentation in JSON or YAML format
 
-1. Start the server in development mode with one of the following commands:
-   ```bash
-   make run
-   # or with hot-reload:
-   make run-dev
-   ```
+In production, Swagger is disabled by default but can be enabled with the `ENABLE_SWAGGER=true` environment variable.
 
-2. Open the Swagger UI in your browser at:
-   ```
-   http://localhost:8081/swagger/index.html
-   ```
+### Health Monitoring
 
-3. In the Swagger UI, you can:
-   - View all available API endpoints
-   - Examine request/response models and parameters in detail
-   - Test APIs directly in the browser
-   - Use API tokens for authenticated requests
-   - Download the documentation as JSON or YAML
-
-#### Notes on Swagger Usage
-
-- In the production environment, Swagger is disabled by default
-- With the environment variable `ENABLE_SWAGGER=true`, Swagger can also be enabled in production
-- The definition can be viewed in `/docs/swagger.json` or `/docs/swagger.yaml`
+- `/health` endpoint provides system health information
+- `/ready` endpoint for container orchestration readiness probes
+- Prometheus metrics at `/metrics` (admin-protected)
 
 ## UI Development Mode
 
-For parallel development of frontend and backend, the system offers a special test mode:
+The backend includes a specialized mode for frontend development, making it easier to work on the UI without managing authentication and test data manually.
 
 ### Activating Test Mode
 
-1. Ensure that the `.env.development` file is being used in the backend directory
-
-2. Test mode configuration:
+1. Configure the environment by using the `.env.development` file with these settings:
    ```
-   # Enable UI test mode
+   # Core test mode settings
    UI_TEST_MODE=true
+   SEED_TEST_DATA=true
    
-   # Predefined test user
+   # Test user credentials
    UI_TEST_USER=admin@example.com
    UI_TEST_PASSWORD=test1234
    
-   # Optional: Bypass authentication (ONLY for development!)
+   # Authentication bypass (use with caution)
    DISABLE_AUTH_FOR_TESTS=false
-   
-   # Generate test data
-   SEED_TEST_DATA=true
    ```
 
-3. Start the backend in development mode:
+2. Start the server in development mode:
    ```bash
    make run-dev
    ```
 
-### Test Mode Features
+### Features
 
-- **Automated Authentication**: With `DISABLE_AUTH_FOR_TESTS` enabled, all requests are automatically authenticated
-- **Test Header**: In test mode, an `X-Test-Mode: enabled` header is returned
-- **Extended CORS**: All local development servers are automatically added to the CORS list
-- **Test Data**: With `SEED_TEST_DATA` enabled, sample data is automatically generated
+- **Test Data Generation**: Creates realistic sample data including users, contacts, deals, tasks, and notes
+- **Authentication Helpers**: Simplified authentication for development
+- **Automatic CORS**: Development origins are automatically allowed
+- **Diagnostic Headers**: Special headers indicate test mode is active
 
-> **IMPORTANT**: Test mode should never be activated in production environments!
+### Security Notice
+
+This mode is designed only for development. The server automatically disables these features in production, but as an additional precaution, never deploy with these settings enabled.
 
 ## Project Structure
 
-### Backend Structure
-
-- `/cmd`: Application entry point
-- `/config`: Database and application configuration
-- `/controllers`: API controllers for all models
-- `/middleware`: Middleware components
-- `/models`: Data models and DB schema
-- `/routes`: API routes and endpoints
-- `/utils`: Helper functions and shared utilities
+```
+/backend
+├── cmd/           # Application entry point
+├── config/        # Database and application configuration
+├── controllers/   # API endpoint handlers for all models
+├── middleware/    # HTTP middleware components
+├── models/        # Data models and database schema
+├── routes/        # API route definitions
+├── utils/         # Helper functions and shared utilities
+├── main.go        # Main application file
+├── go.mod         # Go module definition
+├── go.sum         # Go module checksums
+└── Dockerfile     # Container definition
+```
 
 ### Extending the Backend
 
 1. Add new models in `/models`
 2. Create corresponding controllers in `/controllers`
 3. Register new routes in `/routes/router.go`
-4. Add new migrations in the `migrate()` function
+4. Add models to the migration list in `main.go`
 
 ## Deployment
 
-For information on deploying the Mini CRM system to production environments, please refer to the [Deployment Guide](backend/DEPLOYMENT_GUIDE.md).
+The application can be deployed in several ways:
+
+1. **Standard Go deployment**
+   - Build the binary with `go build`
+   - Deploy with proper environment variables
+
+2. **Docker deployment**
+   - Use the included Dockerfile
+   - Configure with environment variables
+
+For detailed instructions, see the [Deployment Guide](backend/DEPLOYMENT_GUIDE.md).
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please follow these steps:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -358,8 +340,7 @@ This project is licensed under the MIT License with an attribution clause - see 
 
 - [Gin Web Framework](https://github.com/gin-gonic/gin)
 - [GORM](https://gorm.io/)
-- [React](https://reactjs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [React Query](https://react-query.tanstack.com/)
-- [Formik](https://formik.org/)
-- [Framer Motion](https://www.framer.com/motion/)
+- [JWT Go](https://github.com/golang-jwt/jwt)
+- [Logrus](https://github.com/sirupsen/logrus)
+- [Swagger](https://github.com/swaggo/swag)
+- [Prometheus](https://prometheus.io/)
